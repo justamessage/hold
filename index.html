@@ -963,6 +963,7 @@
       // Supabase
       myId: (crypto.randomUUID && crypto.randomUUID()) || ('u-' + Math.random().toString(36).slice(2) + Date.now().toString(36)),
       liveUsers: new Map(), // key → { id, location: {lat, lon}, holding, lang }
+      supabaseClient: null,
       supabaseChannel: null,
       connectionStatus: SUPABASE_ENABLED ? 'connecting' : 'sim',
       offlineReason: null,
@@ -1991,6 +1992,7 @@
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           realtime: { params: { eventsPerSecond: 10 } }
         });
+        state.supabaseClient = client;
 
         const channel = client.channel(CHANNEL_NAME, {
           config: { presence: { key: state.myId } }
@@ -2084,58 +2086,81 @@
           }
         }, 5000);
 
-        // Connection watchdog: if we think we're live but haven't received
-        // any incoming events in a long time, the WebSocket has likely died
-        // silently (common after idle timeouts, sleep/wake, network changes).
-        // Force a fresh subscription to recover.
+        // Shared re-subscribe helper, used by watchdog and visibility handler.
         let isReconnecting = false;
-        setInterval(async () => {
-          if (state.connectionStatus !== 'live' || !state.supabaseChannel) return;
+        async function doResubscribe(reason) {
           if (isReconnecting) return;
-          const now = Date.now();
-          const silentFor = now - state.lastEventReceivedAt;
-          // We should receive peer heartbeats every 5s if anyone's there.
-          // 30s of complete silence with peers tracked means something broke.
-          // If we're alone, we won't get events, so only act when peers exist.
-          const hasPeers = Array.from(state.liveUsers.keys()).some(k => k !== state.myId);
-          if (hasPeers && silentFor > 30000) {
-            console.warn('[HOLD] watchdog: no incoming events for', Math.round(silentFor/1000), 's — reconnecting');
-            isReconnecting = true;
-            state.connectionStatus = 'offline';
-            state.offlineReason = 'watchdog';
-            updateModeIndicator();
-            logDebugEvent('watchdog-reconnect');
-            try {
-              await channel.unsubscribe();
-            } catch (_) {}
-            // Brief delay then re-subscribe (the same channel object can re-subscribe)
-            setTimeout(() => {
-              try {
-                channel.subscribe(async (status) => {
-                  if (status === 'SUBSCRIBED') {
-                    state.connectionStatus = 'live';
-                    state.offlineReason = null;
-                    state.lastEventReceivedAt = Date.now();
-                    updateModeIndicator();
-                    await channel.track(myPresenceState());
-                    recalcLiveCounter();
-                    isReconnecting = false;
-                    logDebugEvent('reconnected');
-                  }
-                });
-              } catch (err) {
-                console.warn('[HOLD] reconnect failed:', err);
+          isReconnecting = true;
+          state.connectionStatus = 'offline';
+          state.offlineReason = reason;
+          updateModeIndicator();
+          logDebugEvent('resub:' + reason);
+          try { await channel.unsubscribe(); } catch (_) {}
+          await new Promise(r => setTimeout(r, 400));
+          try {
+            // Reconnect the raw WebSocket if it's dead
+            if (state.supabaseClient && !state.supabaseClient.realtime.isConnected()) {
+              try { state.supabaseClient.realtime.connect(); } catch (_) {}
+              await new Promise(r => setTimeout(r, 800));
+            }
+            channel.subscribe(async (status) => {
+              if (status === 'SUBSCRIBED') {
+                state.connectionStatus = 'live';
+                state.offlineReason = null;
+                state.lastEventReceivedAt = Date.now();
+                updateModeIndicator();
+                await channel.track(myPresenceState());
+                recalcLiveCounter();
                 isReconnecting = false;
+                logDebugEvent('reconnected');
               }
-            }, 500);
+            });
+          } catch (err) {
+            console.warn('[HOLD] resubscribe failed:', err);
+            isReconnecting = false;
           }
-        }, 10000);
+        }
 
-        // Browser network state — react immediately to offline/online
+        // Connection watchdog: directly monitors the WebSocket state.
+        // This works even when we have no peers (the previous version
+        // needed peers to trigger, which meant silent death after stale-
+        // cleanup removed everyone went undetected).
+        setInterval(() => {
+          if (isReconnecting) return;
+          if (!state.supabaseClient) return;
+          const socketConnected = state.supabaseClient.realtime.isConnected();
+
+          // Case 1: App thinks we're live, but WebSocket is dead
+          if (state.connectionStatus === 'live' && !socketConnected) {
+            console.warn('[HOLD] WebSocket dead while status=live — reconnecting');
+            doResubscribe('socket');
+            return;
+          }
+
+          // Case 2: App knows we're offline, and WebSocket came back
+          if (state.connectionStatus === 'offline' && socketConnected) {
+            console.log('[HOLD] WebSocket back — rejoining channel');
+            doResubscribe('recover');
+            return;
+          }
+
+          // Case 3: WebSocket claims to be open but we haven't received
+          // ANY peer heartbeat in 30s+ despite having peers. TCP half-open.
+          if (state.connectionStatus === 'live' && socketConnected) {
+            const silentFor = Date.now() - state.lastEventReceivedAt;
+            const hasPeers = Array.from(state.liveUsers.keys()).some(k => k !== state.myId);
+            if (hasPeers && silentFor > 30000) {
+              console.warn('[HOLD] silent for', Math.round(silentFor/1000), 's despite peers + open socket — reconnecting');
+              doResubscribe('halfopen');
+            }
+          }
+        }, 3000);
+
+        // Browser network state
         window.addEventListener('online', () => {
           console.log('[HOLD] network: online');
           if (state.connectionStatus !== 'live') {
-            state.lastEventReceivedAt = 0; // force watchdog to re-evaluate
+            doResubscribe('online');
           }
         });
         window.addEventListener('offline', () => {
@@ -2151,11 +2176,21 @@
 
         // When a tab/window comes back to foreground, force a re-sync.
         // Safari aggressively throttles background tabs' WebSocket traffic,
-        // so presence state may be stale after returning. Ping peers with
-        // our current state and re-read any we may have missed.
+        // so presence state may be stale after returning. If hidden long,
+        // force a full resubscription rather than just pinging peers.
+        let hiddenSince = 0;
         document.addEventListener('visibilitychange', () => {
-          if (!document.hidden && state.supabaseChannel && state.connectionStatus === 'live') {
-            console.log('[HOLD] tab visible — re-syncing');
+          if (document.hidden) {
+            hiddenSince = Date.now();
+            return;
+          }
+          if (!state.supabaseChannel || !state.supabaseClient) return;
+          const wasHiddenFor = hiddenSince ? Date.now() - hiddenSince : 0;
+          hiddenSince = 0;
+          console.log('[HOLD] tab visible — hidden for', Math.round(wasHiddenFor/1000), 's');
+
+          // Short hide: just re-ingest + nudge peers
+          if (wasHiddenFor < 30000 && state.supabaseClient.realtime.isConnected()) {
             ingestPresenceState(channel.presenceState());
             try {
               channel.send({
@@ -2164,7 +2199,10 @@
                 payload: myPresenceState()
               });
             } catch (_) {}
+            return;
           }
+          // Long hide OR socket dead: full resubscribe
+          doResubscribe('visibility');
         });
       } catch (err) {
         console.error('[HOLD] Supabase init threw:', err);
