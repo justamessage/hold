@@ -1092,7 +1092,9 @@
     }
 
     function simCounterTick() {
-      if (state.connectionStatus === 'live') return; // live mode handles counter via presence
+      // Only run simulation when Supabase is NOT configured at all.
+      // Prevents fake numbers from flashing during connecting / brief disconnects.
+      if (SUPABASE_ENABLED) return;
       const drift = Math.floor((Math.random() - 0.5) * 14);
       state.targetCounter = Math.max(1000, state.targetCounter + drift);
       if (Math.random() < 0.035) {
@@ -1259,9 +1261,14 @@
         },
         (err) => {
           closeSheet();
-          setTimeout(() => alert(err.code === 1 ? t('err_denied') : t('err_generic')), 300);
+          let msgKey;
+          if (err.code === 1) msgKey = 'err_denied';
+          else if (err.code === 2) msgKey = 'err_unavailable';
+          else if (err.code === 3) msgKey = 'err_timeout';
+          else msgKey = 'err_generic';
+          setTimeout(() => alert(t(msgKey)), 300);
         },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+        { enableHighAccuracy: false, timeout: 30000, maximumAge: 600000 }
       );
     }
 
@@ -1617,7 +1624,7 @@
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
             state.connectionStatus = 'offline';
             updateModeIndicator();
-            initSimCounter(); // fallback
+            // Keep last known live counter value; do NOT fall back to simulation.
           } else if (status === 'CLOSED') {
             state.connectionStatus = 'offline';
             updateModeIndicator();
@@ -1631,10 +1638,10 @@
           try { channel.unsubscribe(); } catch (_) {}
         });
       } catch (err) {
-        console.warn('Supabase init failed, falling back to simulation:', err);
+        console.warn('Supabase init failed:', err);
         state.connectionStatus = 'offline';
         updateModeIndicator();
-        initSimCounter();
+        // Counter stays at 0; user can reload to retry.
       }
     }
 
