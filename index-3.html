@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#050505" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="HOLD" />
+<meta name="description" content="The world, held together. One minute at a time." />
+<title>HOLD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,200..900,0..100;1,9..144,200..900,0..100&family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --text: #ece7dd;
+    --text-dim: #6b6459;
+    --text-faint: #3a3530;
+    --light: #f4e4b8;
+    --light-soft: rgba(244, 228, 184, 0.4);
+    --light-glow: rgba(244, 228, 184, 0.15);
+    --wire: rgba(236, 231, 221, 0.12);
+    --wire-bright: rgba(236, 231, 221, 0.22);
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Geist', system-ui, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+
+  body {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding:
+      max(env(safe-area-inset-top), 20px)
+      max(env(safe-area-inset-right), 20px)
+      max(env(safe-area-inset-bottom), 20px)
+      max(env(safe-area-inset-left), 20px);
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 1;
+    opacity: 0.22; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  }
+
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at center, rgba(244, 228, 184, 0.04) 0%, transparent 58%);
+    transition: opacity 0.8s ease;
+  }
+
+  body.holding::after { opacity: 1.8; }
+
+  /* ─── STATUS ─── */
+  .status {
+    position: relative; z-index: 10;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 12px 8px 0;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim);
+    transition: opacity 0.4s ease;
+  }
+
+  .status-left, .status-right { display: flex; flex-direction: column; gap: 4px; }
+  .status-right { text-align: right; align-items: flex-end; }
+
+  .counter {
+    color: var(--light); font-size: 14px;
+    letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
+  }
+  .counter-label { font-size: 9px; color: var(--text-faint); }
+
+  .join-link {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--text-dim);
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; margin-top: 2px;
+    transition: color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .join-link:active, .join-link:hover { color: var(--light); }
+  .join-link.joined { color: var(--light); }
+  .join-link.joined::before {
+    content: '●  ';
+    font-size: 7px;
+    vertical-align: middle;
+  }
+
+  /* ─── STAGE ─── */
+  .stage {
+    position: relative; z-index: 5;
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    touch-action: none;
+  }
+
+  .globe-wrap {
+    position: relative;
+    width: min(90vw, 90vh, 420px);
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none;
+  }
+
+  #globeCanvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    touch-action: none;
+    transition: filter 0.8s ease;
+    filter: drop-shadow(0 0 40px rgba(244, 228, 184, 0.05));
+  }
+
+  body.holding #globeCanvas {
+    filter: drop-shadow(0 0 80px rgba(244, 228, 184, 0.25));
+  }
+
+  /* Timer */
+  .timer {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    bottom: -28px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; letter-spacing: 0.25em;
+    color: var(--light); opacity: 0;
+    transition: opacity 0.4s ease;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  body.holding .timer { opacity: 1; }
+
+  /* ─── BOTTOM ─── */
+  .bottom {
+    position: relative; z-index: 10;
+    padding: 0 8px 12px;
+    text-align: center;
+    transition: opacity 0.5s ease;
+  }
+
+  .wordmark {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-variation-settings: "opsz" 144, "SOFT" 0;
+    font-size: 24px; letter-spacing: 0.3em;
+    color: var(--text); margin-bottom: 8px;
+    padding-left: 0.3em;
+  }
+  .tagline {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-variation-settings: "opsz" 24;
+    font-size: 13px; color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .countdown {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px; letter-spacing: 0.24em;
+    color: var(--text-faint); text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown .next { color: var(--light); }
+
+  body.holding .bottom,
+  body.holding .status { opacity: 0.12; }
+
+  /* ─── CONSENT SHEET ─── */
+  .sheet-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    z-index: 90;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .sheet-backdrop.visible { opacity: 1; pointer-events: auto; }
+
+  .sheet {
+    width: 100%; max-width: 480px;
+    background: #0a0908;
+    border: 1px solid rgba(244, 228, 184, 0.12);
+    border-radius: 24px 24px 0 0;
+    padding: 36px 28px
+      max(env(safe-area-inset-bottom), 28px) 28px;
+    transform: translateY(20px);
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+  }
+  @media (min-width: 600px) {
+    .sheet-backdrop { align-items: center; }
+    .sheet { border-radius: 24px; margin: 0 20px; }
+  }
+
+  .sheet-backdrop.visible .sheet { transform: translateY(0); }
+
+  .sheet::before {
+    content: '';
+    width: 44px; height: 4px;
+    background: rgba(244, 228, 184, 0.25);
+    border-radius: 2px;
+    position: absolute; top: 12px; left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .sheet-label {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; letter-spacing: 0.28em;
+    color: var(--light); text-transform: uppercase;
+    margin-bottom: 18px; display: flex;
+    align-items: center; gap: 12px;
+  }
+  .sheet-label::before {
+    content: ''; width: 20px; height: 1px; background: var(--light);
+  }
+
+  .sheet-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-variation-settings: "opsz" 72, "SOFT" 50;
+    font-size: 28px; line-height: 1.2;
+    color: var(--text); margin-bottom: 18px;
+    letter-spacing: -0.01em;
+  }
+
+  .sheet-body {
+    font-size: 14px; line-height: 1.6;
+    color: var(--text); margin-bottom: 22px;
+  }
+
+  .sheet-body em {
+    font-family: 'Fraunces', serif; font-style: italic;
+    color: var(--light);
+    font-variation-settings: "opsz" 24;
+  }
+
+  .sheet-terms {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    color: var(--text-dim); line-height: 1.7;
+    padding: 14px 16px;
+    border: 1px solid rgba(244, 228, 184, 0.08);
+    border-radius: 10px; margin-bottom: 24px;
+  }
+  .sheet-terms .k { color: var(--light); }
+
+  .sheet-actions {
+    display: flex; gap: 10px;
+  }
+
+  .btn {
+    flex: 1;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.22em;
+    padding: 16px 18px;
+    background: transparent; color: var(--text);
+    border: 1px solid rgba(244, 228, 184, 0.25);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn:active {
+    background: rgba(244, 228, 184, 0.08);
+    border-color: var(--light-soft);
+  }
+  .btn.primary {
+    background: var(--light); color: #000;
+    border-color: var(--light);
+  }
+  .btn.primary:active { opacity: 0.82; transform: scale(0.98); }
+
+  /* ─── SHARE CARD OVERLAY ─── */
+  .card-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.93);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .card-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .card {
+    width: 100%; max-width: 340px; aspect-ratio: 4/5;
+    background: #050505;
+    border: 1px solid rgba(244, 228, 184, 0.15);
+    border-radius: 20px;
+    padding: 36px 32px 30px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: space-between;
+    position: relative; overflow: hidden;
+    transform: scale(0.96);
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .card-overlay.visible .card { transform: scale(1); }
+
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center top, rgba(244, 228, 184, 0.08) 0%, transparent 55%);
+    pointer-events: none;
+  }
+
+  #cardGlobe {
+    width: 90px; height: 90px;
+    position: relative; z-index: 2;
+  }
+
+  .card-time {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-variation-settings: "opsz" 144, "SOFT" 80;
+    font-style: italic; font-size: 52px;
+    color: var(--light); line-height: 1;
+    text-align: center; position: relative; z-index: 2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card-text {
+    font-family: 'Geist', sans-serif; font-weight: 300;
+    font-size: 13px; line-height: 1.6;
+    color: var(--text); text-align: center;
+    max-width: 240px; position: relative; z-index: 2;
+  }
+  .card-text strong {
+    color: var(--light); font-weight: 400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card-wordmark {
+    font-family: 'Fraunces', serif; font-weight: 300;
+    font-size: 14px; letter-spacing: 0.32em;
+    padding-left: 0.32em; color: var(--text-dim);
+    position: relative; z-index: 2;
+  }
+
+  .card-actions {
+    display: flex; gap: 10px; margin-top: 24px;
+  }
+
+  .card-actions .btn {
+    flex: 0 1 auto;
+    font-size: 10px;
+    padding: 14px 20px;
+  }
+
+  @media (min-width: 768px) {
+    .status { padding: 20px 24px 0; font-size: 11px; }
+    .wordmark { font-size: 28px; }
+    .tagline { font-size: 14px; }
+    .countdown { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+  <div class="status">
+    <div class="status-left">
+      <span class="counter-label">Now holding</span>
+      <span class="counter" id="counter">—</span>
+    </div>
+    <div class="status-right">
+      <span class="counter-label" id="versionLabel">v0.2 · globe</span>
+      <button class="join-link" id="joinBtn">Join the map →</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="globe-wrap" id="globeWrap">
+      <canvas id="globeCanvas"></canvas>
+      <div class="timer" id="timer">0.0s</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="wordmark">HOLD</div>
+    <div class="tagline">Press the world. Hold the world.</div>
+    <div class="countdown">THE 11:11 &middot; <span class="next" id="next1111">calculating…</span></div>
+  </div>
+
+  <!-- Consent sheet -->
+  <div class="sheet-backdrop" id="sheetBackdrop">
+    <div class="sheet">
+      <div class="sheet-label">Join the map</div>
+      <div class="sheet-title">Show the world where you're holding from.</div>
+      <div class="sheet-body">
+        A glowing point appears on the globe at your approximate region. <em>No name, no account, no tracking.</em> You can remove it any time.
+      </div>
+      <div class="sheet-terms">
+        <span class="k">Precision</span> · ~50 km fuzzy region, never exact<br />
+        <span class="k">Anonymity</span> · no identity attached to your light<br />
+        <span class="k">Storage</span> · v0.2 prototype stores only on this device<br />
+        <span class="k">Retention</span> · cleared when you tap "Remove"
+      </div>
+      <div class="sheet-actions">
+        <button class="btn" id="sheetSkip">Skip</button>
+        <button class="btn primary" id="sheetAllow">Share my region</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share card -->
+  <div class="card-overlay" id="cardOverlay">
+    <div class="card">
+      <canvas id="cardGlobe"></canvas>
+      <div class="card-time" id="cardTime">0s</div>
+      <div class="card-text" id="cardText">You held with the world.</div>
+      <div class="card-wordmark">HOLD</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn" id="btnAgain">Hold Again</button>
+      <button class="btn primary" id="btnShare">Share</button>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════════
+    const state = {
+      isHolding: false,
+      holdStart: 0,
+      holdDuration: 0,
+      counter: 0,
+      targetCounter: 0,
+      timerInterval: null,
+      activePointerId: null,
+
+      // Globe rotation
+      rotation: 0,          // radians around Y axis (longitude offset)
+      rotationSpeed: 0.0006, // radians per frame when idle
+      tilt: 0.35,           // radians around X axis (visual tilt)
+
+      // Locations
+      seedDots: [],         // pre-seeded fake presences
+      visibleSeeds: new Set(),
+      userDot: null,        // { lat, lon } if opted-in
+
+      // Animation
+      rafId: null,
+      lastFrameTime: 0,
+    };
+
+    const el = {
+      body:        document.body,
+      stage:       document.getElementById('stage'),
+      globeWrap:   document.getElementById('globeWrap'),
+      canvas:      document.getElementById('globeCanvas'),
+      counter:     document.getElementById('counter'),
+      timer:       document.getElementById('timer'),
+      countdown:   document.getElementById('next1111'),
+      joinBtn:     document.getElementById('joinBtn'),
+      sheetBack:   document.getElementById('sheetBackdrop'),
+      sheetSkip:   document.getElementById('sheetSkip'),
+      sheetAllow:  document.getElementById('sheetAllow'),
+      cardOverlay: document.getElementById('cardOverlay'),
+      cardTime:    document.getElementById('cardTime'),
+      cardText:    document.getElementById('cardText'),
+      cardGlobe:   document.getElementById('cardGlobe'),
+      btnAgain:    document.getElementById('btnAgain'),
+      btnShare:    document.getElementById('btnShare'),
+    };
+
+    const ctx = el.canvas.getContext('2d');
+    let cw = 0, ch = 0, cr = 0;
+
+    // ═══════════════════════════════════════════════════════════
+    //  SEED LOCATIONS (~60 organic global coordinates)
+    // ═══════════════════════════════════════════════════════════
+    // lat, lon (degrees)
+    const SEED_COORDS = [
+      // Europe
+      [52.5, 13.4], [48.9, 2.3], [51.5, -0.1], [40.4, -3.7], [41.9, 12.5],
+      [59.3, 18.1], [52.2, 21.0], [38.7, -9.1], [55.7, 12.6], [50.1, 14.4],
+      [47.5, 19.0], [41.0, 28.9], [55.8, 37.6], [59.9, 30.3], [60.2, 24.9],
+      // Americas
+      [40.7, -74.0], [34.1, -118.2], [41.9, -87.6], [43.7, -79.4], [37.8, -122.4],
+      [25.8, -80.2], [30.3, -97.7], [19.4, -99.1], [-23.5, -46.6], [-34.6, -58.4],
+      [-12.0, -77.0], [4.6, -74.1], [-33.4, -70.7],
+      // Africa
+      [6.5, 3.4], [30.0, 31.2], [-33.9, 18.4], [-1.3, 36.8], [-26.2, 28.0],
+      [9.0, 38.8], [31.6, -8.0], [-4.3, 15.3],
+      // Asia
+      [35.7, 139.7], [37.6, 126.9], [19.1, 72.9], [12.9, 77.6], [1.3, 103.8],
+      [13.8, 100.5], [-6.2, 106.8], [14.6, 121.0], [31.2, 121.5], [22.3, 114.2],
+      [28.6, 77.2], [23.8, 90.4], [41.3, 69.2], [3.1, 101.7],
+      // Middle East
+      [25.2, 55.3], [32.1, 34.8], [24.7, 46.7], [33.3, 44.4], [35.7, 51.4],
+      // Oceania
+      [-33.9, 151.2], [-37.8, 145.0], [-36.9, 174.8], [-17.7, 168.3],
+      // Sparse — smaller presences
+      [64.1, -21.9], [-25.3, -57.6], [35.9, 14.5],
+    ];
+
+    function buildSeeds() {
+      state.seedDots = SEED_COORDS.map((c, i) => ({
+        lat: c[0] * Math.PI / 180,
+        lon: c[1] * Math.PI / 180,
+        id: i,
+        brightness: 0.5 + Math.random() * 0.5,
+        baseBrightness: 0.5 + Math.random() * 0.5,
+        pulsePhase: Math.random() * Math.PI * 2,
+      }));
+      // Start with ~70% visible
+      state.seedDots.forEach(d => {
+        if (Math.random() < 0.72) state.visibleSeeds.add(d.id);
+      });
+    }
+
+    // Churn: fade in/out seed dots over time to feel alive
+    function churnSeeds() {
+      if (state.seedDots.length === 0) return;
+      // Pick 1-2 to toggle
+      const count = 1 + (Math.random() < 0.3 ? 1 : 0);
+      for (let i = 0; i < count; i++) {
+        const target = state.seedDots[Math.floor(Math.random() * state.seedDots.length)];
+        if (state.visibleSeeds.has(target.id)) {
+          if (state.visibleSeeds.size > 28) state.visibleSeeds.delete(target.id);
+        } else {
+          state.visibleSeeds.add(target.id);
+        }
+      }
+    }
+    setInterval(churnSeeds, 2200);
+
+    // ═══════════════════════════════════════════════════════════
+    //  GLOBE RENDER
+    // ═══════════════════════════════════════════════════════════
+    function resizeCanvas() {
+      const rect = el.canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      el.canvas.width = rect.width * dpr;
+      el.canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cw = rect.width; ch = rect.height;
+      cr = Math.min(cw, ch) * 0.46;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    // Project (lat, lon) → {x, y, z'} with current rotation + tilt
+    function project(lat, lon, rot = state.rotation, tilt = state.tilt) {
+      const cosLat = Math.cos(lat);
+      const x = cosLat * Math.sin(lon + rot);
+      let y = Math.sin(lat);
+      let z = cosLat * Math.cos(lon + rot);
+      // Tilt around X
+      const cosT = Math.cos(tilt), sinT = Math.sin(tilt);
+      const y2 = y * cosT - z * sinT;
+      const z2 = y * sinT + z * cosT;
+      return { x, y: y2, z: z2 };
+    }
+
+    function drawGlobe(time) {
+      ctx.clearRect(0, 0, cw, ch);
+
+      const cx = cw / 2, cy = ch / 2;
+
+      // Outer sphere subtle fill
+      ctx.save();
+      const sphereGrad = ctx.createRadialGradient(cx - cr * 0.25, cy - cr * 0.3, 0, cx, cy, cr * 1.1);
+      sphereGrad.addColorStop(0, 'rgba(244, 228, 184, 0.025)');
+      sphereGrad.addColorStop(0.7, 'rgba(244, 228, 184, 0.008)');
+      sphereGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = sphereGrad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // ─── Latitude lines ───
+      ctx.strokeStyle = 'rgba(236, 231, 221, 0.09)';
+      ctx.lineWidth = 0.6;
+      for (let latDeg = -75; latDeg <= 75; latDeg += 15) {
+        const lat = latDeg * Math.PI / 180;
+        drawParallel(cx, cy, lat);
+      }
+
+      // ─── Meridians (longitude lines) ───
+      for (let lonDeg = 0; lonDeg < 360; lonDeg += 30) {
+        const lon = lonDeg * Math.PI / 180;
+        drawMeridian(cx, cy, lon);
+      }
+
+      // ─── Outer ring ───
+      ctx.strokeStyle = 'rgba(236, 231, 221, 0.16)';
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // ─── Seed dots ───
+      state.seedDots.forEach(d => {
+        if (!state.visibleSeeds.has(d.id)) return;
+        const p = project(d.lat, d.lon);
+        if (p.z < 0) return; // behind globe
+
+        // Depth fade
+        const depthAlpha = 0.35 + 0.65 * p.z;
+        const screenX = cx + cr * p.x;
+        const screenY = cy - cr * p.y;
+
+        // Subtle pulse
+        const pulse = 0.8 + 0.2 * Math.sin(time * 0.0014 + d.pulsePhase);
+        const brightness = d.baseBrightness * pulse * depthAlpha;
+
+        // Glow
+        ctx.save();
+        const glow = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, 6);
+        glow.addColorStop(0, `rgba(244, 228, 184, ${0.5 * brightness})`);
+        glow.addColorStop(1, 'rgba(244, 228, 184, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(screenX - 10, screenY - 10, 20, 20);
+
+        // Core
+        ctx.fillStyle = `rgba(244, 228, 184, ${Math.min(1, brightness * 1.3)})`;
+        ctx.beginPath();
+        ctx.arc(screenX, screenY, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // ─── User dot (if joined) ───
+      if (state.userDot) {
+        const p = project(state.userDot.lat, state.userDot.lon);
+        if (p.z >= 0) {
+          const screenX = cx + cr * p.x;
+          const screenY = cy - cr * p.y;
+          const pulse = 0.7 + 0.3 * Math.sin(time * 0.003);
+          const intensity = state.isHolding ? 1 : 0.85;
+
+          // Outer glow
+          ctx.save();
+          const uGlow = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, 22);
+          uGlow.addColorStop(0, `rgba(244, 228, 184, ${0.6 * pulse * intensity})`);
+          uGlow.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          ctx.fillStyle = uGlow;
+          ctx.fillRect(screenX - 30, screenY - 30, 60, 60);
+
+          // Ring
+          ctx.strokeStyle = `rgba(244, 228, 184, ${0.8 * intensity})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, 5 + 2 * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+
+          // Core
+          ctx.fillStyle = 'rgba(244, 228, 184, 1)';
+          ctx.beginPath();
+          ctx.arc(screenX, screenY, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // ─── Holding: outgoing wave from center ───
+      if (state.isHolding) {
+        const elapsed = (time - state.holdStart);
+        const waveCycle = 2800;
+        const waves = 2;
+        for (let w = 0; w < waves; w++) {
+          const phase = ((elapsed + w * waveCycle / waves) % waveCycle) / waveCycle;
+          const radius = cr * (0.15 + phase * 1.1);
+          const alpha = (1 - phase) * 0.25;
+          ctx.save();
+          ctx.strokeStyle = `rgba(244, 228, 184, ${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Bright center
+        ctx.save();
+        const holdGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 0.4);
+        holdGlow.addColorStop(0, 'rgba(244, 228, 184, 0.15)');
+        holdGlow.addColorStop(1, 'rgba(244, 228, 184, 0)');
+        ctx.fillStyle = holdGlow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // Draw a parallel (latitude line) — only the front-facing arc
+    function drawParallel(cx, cy, lat) {
+      const step = 0.08; // radians
+      let started = false;
+      ctx.beginPath();
+      for (let lon = 0; lon <= Math.PI * 2 + step; lon += step) {
+        const p = project(lat, lon);
+        if (p.z >= 0) {
+          const x = cx + cr * p.x;
+          const y = cy - cr * p.y;
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        } else {
+          started = false;
+        }
+      }
+      ctx.stroke();
+    }
+
+    function drawMeridian(cx, cy, lon) {
+      const step = 0.06;
+      let started = false;
+      ctx.beginPath();
+      for (let lat = -Math.PI / 2; lat <= Math.PI / 2 + step; lat += step) {
+        const p = project(lat, lon);
+        if (p.z >= 0) {
+          const x = cx + cr * p.x;
+          const y = cy - cr * p.y;
+          if (!started) { ctx.moveTo(x, y); started = true; }
+          else { ctx.lineTo(x, y); }
+        } else {
+          started = false;
+        }
+      }
+      ctx.stroke();
+    }
+
+    // Animation loop
+    function renderLoop(time) {
+      // Rotation — slow down when holding
+      const targetSpeed = state.isHolding ? 0.00008 : 0.00055;
+      state.rotationSpeed += (targetSpeed - state.rotationSpeed) * 0.04;
+      state.rotation += state.rotationSpeed * Math.min(32, time - state.lastFrameTime || 16);
+      state.lastFrameTime = time;
+
+      drawGlobe(time);
+      state.rafId = requestAnimationFrame(renderLoop);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  COUNTER (fake live count)
+    // ═══════════════════════════════════════════════════════════
+    function initCounter() {
+      const hour = new Date().getUTCHours();
+      const peakFactor = 1 + 0.35 * Math.sin((hour - 4) * Math.PI / 12);
+      state.counter = Math.floor((8200 + Math.random() * 3400) * peakFactor);
+      state.targetCounter = state.counter;
+      updateCounter();
+    }
+    function updateCounter() {
+      el.counter.textContent = state.counter.toLocaleString('en-US');
+    }
+    function counterTick() {
+      const drift = Math.floor((Math.random() - 0.5) * 14);
+      state.targetCounter = Math.max(1000, state.targetCounter + drift);
+      if (Math.random() < 0.035) {
+        state.targetCounter += Math.floor(40 + Math.random() * 180);
+      }
+      const diff = state.targetCounter - state.counter;
+      if (Math.abs(diff) > 0) {
+        state.counter += Math.sign(diff) * Math.max(1, Math.floor(Math.abs(diff) * 0.28));
+        updateCounter();
+      }
+    }
+    setInterval(counterTick, 850);
+
+    // ═══════════════════════════════════════════════════════════
+    //  HOLD MECHANIC
+    // ═══════════════════════════════════════════════════════════
+    function startHold(e) {
+      if (state.isHolding) return;
+      e.preventDefault();
+      try { el.stage.setPointerCapture(e.pointerId); } catch (_) {}
+      state.isHolding = true;
+      state.activePointerId = e.pointerId;
+      state.holdStart = performance.now();
+      el.body.classList.add('holding');
+      if (navigator.vibrate) navigator.vibrate(8);
+      state.targetCounter += 1;
+      state.timerInterval = setInterval(() => {
+        const elapsed = (performance.now() - state.holdStart) / 1000;
+        el.timer.textContent = elapsed.toFixed(1) + 's';
+      }, 100);
+    }
+
+    function endHold(e) {
+      if (!state.isHolding) return;
+      if (e && e.pointerId !== state.activePointerId) return;
+      e && e.preventDefault();
+      try { el.stage.releasePointerCapture(e.pointerId); } catch (_) {}
+
+      state.isHolding = false;
+      state.activePointerId = null;
+      el.body.classList.remove('holding');
+
+      const duration = (performance.now() - state.holdStart) / 1000;
+      state.holdDuration = duration;
+      state.targetCounter = Math.max(1000, state.targetCounter - 1);
+
+      clearInterval(state.timerInterval);
+      el.timer.textContent = '0.0s';
+
+      if (duration >= 3) {
+        setTimeout(() => showCard(duration), 450);
+      }
+    }
+
+    el.stage.addEventListener('pointerdown',   startHold);
+    el.stage.addEventListener('pointerup',     endHold);
+    el.stage.addEventListener('pointercancel', endHold);
+    el.stage.addEventListener('contextmenu',   e => e.preventDefault());
+
+    // ═══════════════════════════════════════════════════════════
+    //  LOCATION — opt-in flow (local-only for v0.2)
+    // ═══════════════════════════════════════════════════════════
+    const STORAGE_KEY = 'hold.userDot.v02';
+
+    function loadUserDot() {
+      try {
+        const stored = (window.localStorage && localStorage.getItem(STORAGE_KEY));
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
+            state.userDot = parsed;
+            updateJoinButton();
+          }
+        }
+      } catch (_) {}
+    }
+
+    function saveUserDot(dot) {
+      try {
+        if (window.localStorage) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(dot));
+        }
+      } catch (_) {}
+    }
+
+    function clearUserDot() {
+      state.userDot = null;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      updateJoinButton();
+    }
+
+    function updateJoinButton() {
+      if (state.userDot) {
+        el.joinBtn.textContent = 'On the map · remove';
+        el.joinBtn.classList.add('joined');
+      } else {
+        el.joinBtn.textContent = 'Join the map →';
+        el.joinBtn.classList.remove('joined');
+      }
+    }
+
+    function openSheet() {
+      el.sheetBack.classList.add('visible');
+    }
+    function closeSheet() {
+      el.sheetBack.classList.remove('visible');
+    }
+
+    function fuzzyCoord(c) {
+      // Round to ~0.5° = ~50km at equator
+      return Math.round(c * 2) / 2;
+    }
+
+    function requestLocation() {
+      if (!navigator.geolocation) {
+        alert('Geolocation is not available on this device.');
+        closeSheet();
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = fuzzyCoord(pos.coords.latitude);
+          const lon = fuzzyCoord(pos.coords.longitude);
+          state.userDot = {
+            lat: lat * Math.PI / 180,
+            lon: lon * Math.PI / 180,
+            latDeg: lat, lonDeg: lon,
+          };
+          saveUserDot(state.userDot);
+          updateJoinButton();
+          closeSheet();
+          if (navigator.vibrate) navigator.vibrate([8, 30, 16]);
+
+          // Rotate globe so user's dot becomes visible (nice welcome)
+          state.rotation = -state.userDot.lon + 0.1;
+        },
+        (err) => {
+          closeSheet();
+          setTimeout(() => alert(
+            err.code === 1
+              ? 'Location permission denied. You can try again anytime.'
+              : 'Could not read location. Try again?'
+          ), 300);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+      );
+    }
+
+    el.joinBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (state.userDot) {
+        if (confirm('Remove your light from the map?')) {
+          clearUserDot();
+        }
+      } else {
+        openSheet();
+      }
+    });
+    el.sheetSkip.addEventListener('click', closeSheet);
+    el.sheetAllow.addEventListener('click', requestLocation);
+    el.sheetBack.addEventListener('click', (e) => {
+      if (e.target === el.sheetBack) closeSheet();
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    //  SHARE CARD
+    // ═══════════════════════════════════════════════════════════
+    function formatDuration(seconds) {
+      if (seconds < 60) return Math.floor(seconds) + 's';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return m + 'm ' + String(s).padStart(2, '0') + 's';
+    }
+
+    function showCard(duration) {
+      el.cardTime.textContent = formatDuration(duration);
+      const countOther = Math.max(1, state.counter - 1);
+      el.cardText.innerHTML =
+        'You held with<br><strong>' +
+        countOther.toLocaleString('en-US') +
+        '</strong> others.';
+      drawCardGlobe();
+      el.cardOverlay.classList.add('visible');
+      if (navigator.vibrate) navigator.vibrate([10, 40, 10]);
+    }
+    function hideCard() { el.cardOverlay.classList.remove('visible'); }
+    el.btnAgain.addEventListener('click', hideCard);
+
+    // Mini globe inside the share card — night-lights style
+    function drawCardGlobe() {
+      const cnv = el.cardGlobe;
+      const dpr = window.devicePixelRatio || 1;
+      const size = 90;
+      cnv.width = size * dpr; cnv.height = size * dpr;
+      cnv.style.width = size + 'px'; cnv.style.height = size + 'px';
+      const c = cnv.getContext('2d');
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, size, size);
+
+      const cx = size / 2, cy = size / 2, r = size * 0.44;
+
+      // Dark sphere
+      const sGrad = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx, cy, r);
+      sGrad.addColorStop(0, '#121010');
+      sGrad.addColorStop(1, '#050505');
+      c.fillStyle = sGrad;
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+
+      // Outer ring
+      c.strokeStyle = 'rgba(244, 228, 184, 0.18)';
+      c.lineWidth = 0.8;
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+
+      // Dots: use current rotation from main globe
+      const rot = state.rotation;
+      const tilt = state.tilt;
+
+      state.seedDots.forEach(d => {
+        if (!state.visibleSeeds.has(d.id)) return;
+        const p = project(d.lat, d.lon, rot, tilt);
+        if (p.z < 0) return;
+        const x = cx + r * p.x, y = cy - r * p.y;
+        const depth = 0.4 + 0.6 * p.z;
+        c.fillStyle = `rgba(244, 228, 184, ${0.75 * depth})`;
+        c.beginPath(); c.arc(x, y, 0.9, 0, Math.PI * 2); c.fill();
+      });
+
+      if (state.userDot) {
+        const p = project(state.userDot.lat, state.userDot.lon, rot, tilt);
+        if (p.z >= 0) {
+          const x = cx + r * p.x, y = cy - r * p.y;
+          const g = c.createRadialGradient(x, y, 0, x, y, 10);
+          g.addColorStop(0, 'rgba(244, 228, 184, 0.9)');
+          g.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          c.fillStyle = g;
+          c.fillRect(x - 12, y - 12, 24, 24);
+          c.fillStyle = 'rgba(244, 228, 184, 1)';
+          c.beginPath(); c.arc(x, y, 1.6, 0, Math.PI * 2); c.fill();
+        }
+      }
+    }
+
+    el.btnShare.addEventListener('click', async () => {
+      try {
+        const canvas = await generateShareImage(state.holdDuration, state.counter);
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const file = new File([blob], 'hold.png', { type: 'image/png' });
+          const shareData = {
+            files: [file], title: 'HOLD',
+            text: 'I held with ' + state.counter.toLocaleString('en-US') + ' others.',
+          };
+          if (navigator.canShare && navigator.canShare(shareData)) {
+            try { await navigator.share(shareData); }
+            catch (err) { if (err.name !== 'AbortError') downloadImage(blob); }
+          } else {
+            downloadImage(blob);
+          }
+        }, 'image/png');
+      } catch (err) { console.warn('Share failed', err); }
+    });
+
+    function downloadImage(blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'hold-' + Date.now() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    async function generateShareImage(duration, others) {
+      await document.fonts.ready;
+      try {
+        await Promise.all([
+          document.fonts.load('italic 300 180px "Fraunces"'),
+          document.fonts.load('300 36px "Geist"'),
+          document.fonts.load('400 24px "Geist Mono"'),
+          document.fonts.load('300 56px "Fraunces"'),
+        ]);
+      } catch (_) {}
+
+      const W = 1080, H = 1350;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const c = canvas.getContext('2d');
+
+      // Background
+      c.fillStyle = '#050505'; c.fillRect(0, 0, W, H);
+      const bgGrd = c.createRadialGradient(W/2, H/2 - 200, 0, W/2, H/2 - 200, W/1.2);
+      bgGrd.addColorStop(0, 'rgba(244, 228, 184, 0.09)');
+      bgGrd.addColorStop(1, 'rgba(244, 228, 184, 0)');
+      c.fillStyle = bgGrd; c.fillRect(0, 0, W, H);
+
+      // Night-lights globe centered top
+      const gcx = W/2, gcy = 380, gR = 170;
+
+      // Subtle sphere
+      const sGrad = c.createRadialGradient(gcx - gR * 0.3, gcy - gR * 0.3, 0, gcx, gcy, gR);
+      sGrad.addColorStop(0, '#0e0c0a');
+      sGrad.addColorStop(1, '#050505');
+      c.fillStyle = sGrad;
+      c.beginPath(); c.arc(gcx, gcy, gR, 0, Math.PI * 2); c.fill();
+
+      // Ring
+      c.strokeStyle = 'rgba(244, 228, 184, 0.24)';
+      c.lineWidth = 1.2;
+      c.beginPath(); c.arc(gcx, gcy, gR, 0, Math.PI * 2); c.stroke();
+
+      // Dots
+      state.seedDots.forEach(d => {
+        if (!state.visibleSeeds.has(d.id)) return;
+        const p = project(d.lat, d.lon);
+        if (p.z < 0) return;
+        const x = gcx + gR * p.x, y = gcy - gR * p.y;
+        const depth = 0.4 + 0.6 * p.z;
+        // Glow
+        const gl = c.createRadialGradient(x, y, 0, x, y, 10);
+        gl.addColorStop(0, `rgba(244, 228, 184, ${0.5 * depth})`);
+        gl.addColorStop(1, 'rgba(244, 228, 184, 0)');
+        c.fillStyle = gl;
+        c.fillRect(x - 14, y - 14, 28, 28);
+        // Core
+        c.fillStyle = `rgba(244, 228, 184, ${0.95 * depth})`;
+        c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill();
+      });
+
+      // User dot bright
+      if (state.userDot) {
+        const p = project(state.userDot.lat, state.userDot.lon);
+        if (p.z >= 0) {
+          const x = gcx + gR * p.x, y = gcy - gR * p.y;
+          const gl = c.createRadialGradient(x, y, 0, x, y, 30);
+          gl.addColorStop(0, 'rgba(244, 228, 184, 0.95)');
+          gl.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          c.fillStyle = gl;
+          c.fillRect(x - 36, y - 36, 72, 72);
+          c.fillStyle = 'rgba(255, 248, 220, 1)';
+          c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill();
+        }
+      }
+
+      // Time (hero)
+      c.fillStyle = '#f4e4b8';
+      c.font = 'italic 300 170px "Fraunces", Georgia, serif';
+      c.textAlign = 'center';
+      c.textBaseline = 'alphabetic';
+      c.fillText(formatDuration(duration), W/2, 780);
+
+      // Thin line
+      c.strokeStyle = 'rgba(244, 228, 184, 0.2)';
+      c.lineWidth = 1;
+      c.beginPath(); c.moveTo(W/2 - 60, 820); c.lineTo(W/2 + 60, 820); c.stroke();
+
+      // Others count
+      c.fillStyle = '#ece7dd';
+      c.font = '300 34px "Geist", system-ui, sans-serif';
+      c.fillText('I held with ' + Math.max(1, others - 1).toLocaleString('en-US') + ' others.', W/2, 880);
+
+      // Date
+      c.fillStyle = '#6b6459';
+      c.font = '400 22px "Geist Mono", monospace';
+      const today = new Date().toISOString().slice(0, 10);
+      c.fillText(today.replace(/-/g, '.'), W/2, 928);
+
+      // Wordmark (manual tracking)
+      c.fillStyle = '#ece7dd';
+      c.font = '300 56px "Fraunces", Georgia, serif';
+      const letters = 'HOLD';
+      const tracking = 28;
+      let totalW = 0; const widths = [];
+      for (const l of letters) {
+        const w = c.measureText(l).width;
+        widths.push(w); totalW += w + tracking;
+      }
+      totalW -= tracking;
+      let x = W/2 - totalW/2;
+      for (let i = 0; i < letters.length; i++) {
+        c.fillText(letters[i], x + widths[i]/2, H - 150);
+        x += widths[i] + tracking;
+      }
+
+      // Tagline
+      c.fillStyle = '#6b6459';
+      c.font = 'italic 300 22px "Fraunces", Georgia, serif';
+      c.fillText('the world, held together', W/2, H - 100);
+
+      return canvas;
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  11:11 COUNTDOWN
+    // ═══════════════════════════════════════════════════════════
+    function updateCountdown() {
+      const now = new Date();
+      const target = new Date(now);
+      target.setUTCHours(11, 11, 0, 0);
+      if (target <= now) target.setUTCDate(target.getUTCDate() + 1);
+      const diff = target - now;
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      el.countdown.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 30000);
+
+    // ═══════════════════════════════════════════════════════════
+    //  INIT
+    // ═══════════════════════════════════════════════════════════
+    buildSeeds();
+    loadUserDot();
+    initCounter();
+    resizeCanvas();
+    state.rafId = requestAnimationFrame(renderLoop);
+
+    // Safety re-size on orientation change
+    setTimeout(resizeCanvas, 100);
+  </script>
+</body>
+</html>
