@@ -971,6 +971,7 @@
       debug: new URLSearchParams(location.search).has('debug'),
       lastEvent: '—',
       lastEventAt: 0,
+      lastEventReceivedAt: Date.now(), // bumped on every INCOMING event; used by watchdog
       trackCount: 0,
       syncCount: 0,
     };
@@ -1319,6 +1320,10 @@
     function logDebugEvent(name) {
       state.lastEvent = name;
       state.lastEventAt = Date.now();
+      // Incoming events bump the watchdog timer. Outbound own-track calls don't.
+      if (!name.startsWith('track:')) {
+        state.lastEventReceivedAt = Date.now();
+      }
       console.log('[HOLD:debug]', name, '| users=' + state.liveUsers.size,
         '| holding=' + countHolders(),
         '| status=' + state.connectionStatus);
@@ -1343,6 +1348,9 @@
       const secondsAgo = state.lastEventAt
         ? Math.floor((Date.now() - state.lastEventAt) / 1000) + 's ago'
         : '—';
+      const rxAgo = state.lastEventReceivedAt
+        ? Math.floor((Date.now() - state.lastEventReceivedAt) / 1000) + 's'
+        : '—';
       const users = Array.from(state.liveUsers.values())
         .map(u => (u.id === state.myId ? '•me' : u.id.slice(0, 4)) + (u.holding ? '✋' : ''))
         .join(' ');
@@ -1355,6 +1363,7 @@
         <div class="row">
           <span><span class="dk">users</span> <span class="dv">${state.liveUsers.size}</span></span>
           <span><span class="dk">holding</span> <span class="dv">${countHolders()}</span></span>
+          <span><span class="dk">rx</span> <span class="dv">${rxAgo}</span></span>
           <span><span class="dk">sync</span> <span class="dv">${state.syncCount}</span></span>
           <span><span class="dk">track</span> <span class="dv">${state.trackCount}</span></span>
         </div>
@@ -2074,6 +2083,67 @@
             logDebugEvent('cleanup');
           }
         }, 5000);
+
+        // Connection watchdog: if we think we're live but haven't received
+        // any incoming events in a long time, the WebSocket has likely died
+        // silently (common after idle timeouts, sleep/wake, network changes).
+        // Force a fresh subscription to recover.
+        let isReconnecting = false;
+        setInterval(async () => {
+          if (state.connectionStatus !== 'live' || !state.supabaseChannel) return;
+          if (isReconnecting) return;
+          const now = Date.now();
+          const silentFor = now - state.lastEventReceivedAt;
+          // We should receive peer heartbeats every 5s if anyone's there.
+          // 30s of complete silence with peers tracked means something broke.
+          // If we're alone, we won't get events, so only act when peers exist.
+          const hasPeers = Array.from(state.liveUsers.keys()).some(k => k !== state.myId);
+          if (hasPeers && silentFor > 30000) {
+            console.warn('[HOLD] watchdog: no incoming events for', Math.round(silentFor/1000), 's — reconnecting');
+            isReconnecting = true;
+            state.connectionStatus = 'offline';
+            state.offlineReason = 'watchdog';
+            updateModeIndicator();
+            logDebugEvent('watchdog-reconnect');
+            try {
+              await channel.unsubscribe();
+            } catch (_) {}
+            // Brief delay then re-subscribe (the same channel object can re-subscribe)
+            setTimeout(() => {
+              try {
+                channel.subscribe(async (status) => {
+                  if (status === 'SUBSCRIBED') {
+                    state.connectionStatus = 'live';
+                    state.offlineReason = null;
+                    state.lastEventReceivedAt = Date.now();
+                    updateModeIndicator();
+                    await channel.track(myPresenceState());
+                    recalcLiveCounter();
+                    isReconnecting = false;
+                    logDebugEvent('reconnected');
+                  }
+                });
+              } catch (err) {
+                console.warn('[HOLD] reconnect failed:', err);
+                isReconnecting = false;
+              }
+            }, 500);
+          }
+        }, 10000);
+
+        // Browser network state — react immediately to offline/online
+        window.addEventListener('online', () => {
+          console.log('[HOLD] network: online');
+          if (state.connectionStatus !== 'live') {
+            state.lastEventReceivedAt = 0; // force watchdog to re-evaluate
+          }
+        });
+        window.addEventListener('offline', () => {
+          console.log('[HOLD] network: offline');
+          state.connectionStatus = 'offline';
+          state.offlineReason = 'network';
+          updateModeIndicator();
+        });
 
         window.addEventListener('beforeunload', () => {
           try { channel.unsubscribe(); } catch (_) {}
