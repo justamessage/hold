@@ -1799,7 +1799,13 @@
 
     function broadcastPresence() {
       if (!state.supabaseChannel || state.connectionStatus !== 'live') return;
-      try { state.supabaseChannel.track(myPresenceState()); } catch (_) {}
+      const ps = myPresenceState();
+      // Mirror own presence locally so the counter is accurate immediately,
+      // without waiting for Supabase's round-trip. The incoming sync event
+      // will overwrite this entry idempotently shortly after.
+      state.liveUsers.set(state.myId, ps);
+      try { state.supabaseChannel.track(ps); } catch (_) {}
+      recalcLiveCounter();
     }
 
     function ingestPresenceState(presenceState) {
