@@ -868,13 +868,17 @@
       updateJoinButton();
       renderSheetDynamicContent();
       updateModeIndicator();
-      // Broadcast language so dots show proper locale in future features
-      broadcastPresence();
+      // Re-format counter in new locale (e.g. 1.234 → 1,234)
+      updateCounter();
       // Re-geocode user location in new language (for country name translation)
       if (state.userDot && state.userDot.showPrecise && state.userDot.geocodedLang !== currentLang) {
         geocodeUserDot();
       }
       updatePreciseSwitch();
+      // Note: NOT calling broadcastPresence() here on purpose. Language is
+      // a local UI concern and doesn't need to propagate. Broadcasting on
+      // every language tap would add unnecessary load and has been observed
+      // to interfere with subsequent counter updates.
     }
 
     function applyI18n() {
