@@ -23,8 +23,6 @@
     --light: #f4e4b8;
     --light-soft: rgba(244, 228, 184, 0.4);
     --light-glow: rgba(244, 228, 184, 0.15);
-    --wire: rgba(236, 231, 221, 0.12);
-    --wire-bright: rgba(236, 231, 221, 0.22);
   }
 
   html, body {
@@ -43,11 +41,8 @@
   }
 
   body {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column; justify-content: space-between;
     padding:
       max(env(safe-area-inset-top), 20px)
       max(env(safe-area-inset-right), 20px)
@@ -56,16 +51,14 @@
   }
 
   body::before {
-    content: '';
-    position: fixed; inset: 0;
+    content: ''; position: fixed; inset: 0;
     pointer-events: none; z-index: 1;
     opacity: 0.22; mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
   }
 
   body::after {
-    content: '';
-    position: fixed; inset: 0;
+    content: ''; position: fixed; inset: 0;
     pointer-events: none; z-index: 0;
     background: radial-gradient(ellipse at center, rgba(244, 228, 184, 0.04) 0%, transparent 58%);
     transition: opacity 0.8s ease;
@@ -93,6 +86,21 @@
   }
   .counter-label { font-size: 9px; color: var(--text-faint); }
 
+  .mode-indicator {
+    font-size: 9px;
+    color: var(--text-faint);
+    letter-spacing: 0.2em;
+  }
+  .mode-indicator.live { color: var(--light); }
+  .mode-indicator.live::before {
+    content: '● ';
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+  @keyframes live-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
   .join-link {
     font-family: 'Geist Mono', monospace;
     font-size: 9px; letter-spacing: 0.22em;
@@ -105,9 +113,7 @@
   .join-link:active, .join-link:hover { color: var(--light); }
   .join-link.joined { color: var(--light); }
   .join-link.joined::before {
-    content: '●  ';
-    font-size: 7px;
-    vertical-align: middle;
+    content: '●  '; font-size: 7px; vertical-align: middle;
   }
 
   /* ─── STAGE ─── */
@@ -119,7 +125,7 @@
 
   .globe-wrap {
     position: relative;
-    width: min(90vw, 90vh, 420px);
+    width: min(90vw, 85vh, 420px);
     aspect-ratio: 1 / 1;
     display: flex; align-items: center; justify-content: center;
     touch-action: none;
@@ -137,7 +143,6 @@
     filter: drop-shadow(0 0 80px rgba(244, 228, 184, 0.25));
   }
 
-  /* Timer */
   .timer {
     position: absolute;
     left: 50%; transform: translateX(-50%);
@@ -148,15 +153,14 @@
     transition: opacity 0.4s ease;
     text-transform: uppercase;
     font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    pointer-events: none;
+    white-space: nowrap; pointer-events: none;
   }
   body.holding .timer { opacity: 1; }
 
   /* ─── BOTTOM ─── */
   .bottom {
     position: relative; z-index: 10;
-    padding: 0 8px 12px;
+    padding: 0 8px 4px;
     text-align: center;
     transition: opacity 0.5s ease;
   }
@@ -172,15 +176,41 @@
     font-family: 'Fraunces', serif; font-style: italic;
     font-variation-settings: "opsz" 24;
     font-size: 13px; color: var(--text-dim);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    padding: 0 20px;
   }
   .countdown {
     font-family: 'Geist Mono', monospace;
     font-size: 9px; letter-spacing: 0.24em;
     color: var(--text-faint); text-transform: uppercase;
     font-variant-numeric: tabular-nums;
+    margin-bottom: 12px;
   }
   .countdown .next { color: var(--light); }
+
+  .lang-switch {
+    display: flex; justify-content: center; gap: 0;
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px; letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding-top: 8px;
+    border-top: 1px solid rgba(244, 228, 184, 0.05);
+    max-width: 340px; margin: 0 auto;
+    transition: opacity 0.5s ease;
+  }
+  .lang-btn {
+    background: none; border: none;
+    color: var(--text-faint);
+    padding: 6px 8px; cursor: pointer;
+    font-family: inherit; font-size: inherit;
+    letter-spacing: inherit; text-transform: inherit;
+    transition: color 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .lang-btn:active { color: var(--light); }
+  .lang-btn.active { color: var(--light); }
+  .lang-sep { color: rgba(58, 53, 48, 0.5); padding: 6px 0; }
 
   body.holding .bottom,
   body.holding .status { opacity: 0.12; }
@@ -202,8 +232,7 @@
     background: #0a0908;
     border: 1px solid rgba(244, 228, 184, 0.12);
     border-radius: 24px 24px 0 0;
-    padding: 36px 28px
-      max(env(safe-area-inset-bottom), 28px) 28px;
+    padding: 36px 28px max(env(safe-area-inset-bottom), 28px) 28px;
     transform: translateY(20px);
     transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
     position: relative;
@@ -216,8 +245,7 @@
   .sheet-backdrop.visible .sheet { transform: translateY(0); }
 
   .sheet::before {
-    content: '';
-    width: 44px; height: 4px;
+    content: ''; width: 44px; height: 4px;
     background: rgba(244, 228, 184, 0.25);
     border-radius: 2px;
     position: absolute; top: 12px; left: 50%;
@@ -248,7 +276,6 @@
     font-size: 14px; line-height: 1.6;
     color: var(--text); margin-bottom: 22px;
   }
-
   .sheet-body em {
     font-family: 'Fraunces', serif; font-style: italic;
     color: var(--light);
@@ -257,7 +284,7 @@
 
   .sheet-terms {
     font-family: 'Geist Mono', monospace;
-    font-size: 10px; letter-spacing: 0.1em;
+    font-size: 10px; letter-spacing: 0.08em;
     color: var(--text-dim); line-height: 1.7;
     padding: 14px 16px;
     border: 1px solid rgba(244, 228, 184, 0.08);
@@ -265,16 +292,14 @@
   }
   .sheet-terms .k { color: var(--light); }
 
-  .sheet-actions {
-    display: flex; gap: 10px;
-  }
+  .sheet-actions { display: flex; gap: 10px; }
 
   .btn {
     flex: 1;
     font-family: 'Geist Mono', monospace;
     font-size: 11px; font-weight: 400;
-    text-transform: uppercase; letter-spacing: 0.22em;
-    padding: 16px 18px;
+    text-transform: uppercase; letter-spacing: 0.2em;
+    padding: 16px 14px;
     background: transparent; color: var(--text);
     border: 1px solid rgba(244, 228, 184, 0.25);
     border-radius: 999px;
@@ -293,7 +318,7 @@
   }
   .btn.primary:active { opacity: 0.82; transform: scale(0.98); }
 
-  /* ─── SHARE CARD OVERLAY ─── */
+  /* ─── SHARE CARD ─── */
   .card-overlay {
     position: fixed; inset: 0;
     background: rgba(0, 0, 0, 0.93);
@@ -326,10 +351,7 @@
     pointer-events: none;
   }
 
-  #cardGlobe {
-    width: 90px; height: 90px;
-    position: relative; z-index: 2;
-  }
+  #cardGlobe { width: 90px; height: 90px; position: relative; z-index: 2; }
 
   .card-time {
     font-family: 'Fraunces', serif; font-weight: 300;
@@ -358,14 +380,9 @@
     position: relative; z-index: 2;
   }
 
-  .card-actions {
-    display: flex; gap: 10px; margin-top: 24px;
-  }
-
+  .card-actions { display: flex; gap: 10px; margin-top: 24px; }
   .card-actions .btn {
-    flex: 0 1 auto;
-    font-size: 10px;
-    padding: 14px 20px;
+    flex: 0 1 auto; font-size: 10px; padding: 14px 20px;
   }
 
   @media (min-width: 768px) {
@@ -379,12 +396,12 @@
 <body>
   <div class="status">
     <div class="status-left">
-      <span class="counter-label">Now holding</span>
+      <span class="counter-label" data-i18n="counter_label">Now holding</span>
       <span class="counter" id="counter">—</span>
     </div>
     <div class="status-right">
-      <span class="counter-label" id="versionLabel">v0.2 · globe</span>
-      <button class="join-link" id="joinBtn">Join the map →</button>
+      <span class="mode-indicator" id="modeIndicator">v0.4 · simulated</span>
+      <button class="join-link" id="joinBtn" data-i18n="join_link">Join the map →</button>
     </div>
   </div>
 
@@ -397,46 +414,362 @@
 
   <div class="bottom">
     <div class="wordmark">HOLD</div>
-    <div class="tagline">Press the world. Hold the world.</div>
-    <div class="countdown">THE 11:11 &middot; <span class="next" id="next1111">calculating…</span></div>
+    <div class="tagline" data-i18n="tagline">Press the world. Hold the world.</div>
+    <div class="countdown">
+      <span data-i18n="countdown_prefix">THE 11:11 ·</span>
+      <span class="next" id="next1111" data-i18n="countdown_calc">calculating…</span>
+    </div>
+    <div class="lang-switch" id="langSwitch"></div>
   </div>
 
-  <!-- Consent sheet -->
   <div class="sheet-backdrop" id="sheetBackdrop">
     <div class="sheet">
-      <div class="sheet-label">Join the map</div>
-      <div class="sheet-title">Show the world where you're holding from.</div>
-      <div class="sheet-body">
-        A glowing point appears on the globe at your approximate region. <em>No name, no account, no tracking.</em> You can remove it any time.
-      </div>
-      <div class="sheet-terms">
-        <span class="k">Precision</span> · ~50 km fuzzy region, never exact<br />
-        <span class="k">Anonymity</span> · no identity attached to your light<br />
-        <span class="k">Storage</span> · v0.2 prototype stores only on this device<br />
-        <span class="k">Retention</span> · cleared when you tap "Remove"
-      </div>
+      <div class="sheet-label" data-i18n="sheet_label">Join the map</div>
+      <div class="sheet-title" data-i18n="sheet_title">Show the world where you're holding from.</div>
+      <div class="sheet-body" id="sheetBody"></div>
+      <div class="sheet-terms" id="sheetTerms"></div>
       <div class="sheet-actions">
-        <button class="btn" id="sheetSkip">Skip</button>
-        <button class="btn primary" id="sheetAllow">Share my region</button>
+        <button class="btn" id="sheetSkip" data-i18n="btn_skip">Skip</button>
+        <button class="btn primary" id="sheetAllow" data-i18n="btn_allow">Share my region</button>
       </div>
     </div>
   </div>
 
-  <!-- Share card -->
   <div class="card-overlay" id="cardOverlay">
     <div class="card">
       <canvas id="cardGlobe"></canvas>
       <div class="card-time" id="cardTime">0s</div>
-      <div class="card-text" id="cardText">You held with the world.</div>
+      <div class="card-text" id="cardText"></div>
       <div class="card-wordmark">HOLD</div>
     </div>
     <div class="card-actions">
-      <button class="btn" id="btnAgain">Hold Again</button>
-      <button class="btn primary" id="btnShare">Share</button>
+      <button class="btn" id="btnAgain" data-i18n="btn_again">Hold Again</button>
+      <button class="btn primary" id="btnShare" data-i18n="btn_share">Share</button>
     </div>
   </div>
 
   <script>
+    // ╔═══════════════════════════════════════════════════════════╗
+    // ║                                                           ║
+    // ║   SUPABASE CONFIG — paste your two values here            ║
+    // ║                                                           ║
+    // ║   Supabase dashboard → Settings → API                     ║
+    // ║   • Project URL  →  SUPABASE_URL                          ║
+    // ║   • anon public  →  SUPABASE_ANON_KEY                     ║
+    // ║                                                           ║
+    // ║   Leave empty → simulation mode (v0.3 behavior)           ║
+    // ║   Fill in both → real-time presence activates             ║
+    // ║                                                           ║
+    // ╚═══════════════════════════════════════════════════════════╝
+    const SUPABASE_URL = 'https://bxbvdayqzjzqazqjxpbe.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_BLuyBXm-AzlE1xe95yE3ug_3N75Mtqw';
+
+    const SUPABASE_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+    const CHANNEL_NAME = 'hold:global';
+
+    // ═══════════════════════════════════════════════════════════
+    //  I18N (same as v0.3)
+    // ═══════════════════════════════════════════════════════════
+    const I18N = {
+      en: {
+        label: 'EN',
+        counter_label: 'Now holding',
+        join_link: 'Join the map →',
+        join_link_on: 'On the map · remove',
+        tagline: 'Press the world. Hold the world.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'calculating…',
+        sheet_label: 'Join the map',
+        sheet_title: "Show the world where you're holding from.",
+        sheet_body: 'A glowing point appears on the globe at your approximate region. <em>No name, no account, no tracking.</em> You can remove it any time.',
+        term_precision_k: 'Precision',
+        term_precision_v: '~50 km fuzzy region, never exact',
+        term_anonymity_k: 'Anonymity',
+        term_anonymity_v: 'no identity attached to your light',
+        term_storage_k: 'Storage',
+        term_storage_v: 'ephemeral presence only, no database',
+        term_retention_k: 'Retention',
+        term_retention_v: 'gone the moment you close the app',
+        btn_skip: 'Skip',
+        btn_allow: 'Share my region',
+        btn_again: 'Hold Again',
+        btn_share: 'Share',
+        card_text: 'You held with<br><strong>{n}</strong> others.',
+        card_text_alone: 'You held alone.<br>Others will feel it.',
+        share_text: 'I held with {n} others.',
+        share_text_alone: 'I held the world.',
+        share_tagline: 'the world, held together',
+        confirm_remove: 'Remove your light from the map?',
+        err_denied: 'Location permission denied. You can try again anytime.',
+        err_generic: 'Could not read location. Try again?',
+        err_unsupported: 'Geolocation is not available on this device.',
+        mode_sim: 'v0.4 · simulated',
+        mode_connecting: 'v0.4 · connecting…',
+        mode_live: 'v0.4 · live',
+        mode_offline: 'v0.4 · offline',
+      },
+      de: {
+        label: 'DE',
+        counter_label: 'Halten gerade',
+        join_link: 'Auf die Karte →',
+        join_link_on: 'Auf der Karte · entfernen',
+        tagline: 'Drücke die Welt. Halte die Welt.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'wird berechnet…',
+        sheet_label: 'Auf die Karte',
+        sheet_title: 'Zeig der Welt, von wo du hältst.',
+        sheet_body: 'Ein leuchtender Punkt erscheint auf dem Globus in deiner ungefähren Region. <em>Kein Name, kein Konto, kein Tracking.</em> Du kannst ihn jederzeit entfernen.',
+        term_precision_k: 'Genauigkeit',
+        term_precision_v: '~50 km unscharf, niemals exakt',
+        term_anonymity_k: 'Anonymität',
+        term_anonymity_v: 'deinem Licht ist keine Identität zugeordnet',
+        term_storage_k: 'Speicherung',
+        term_storage_v: 'nur flüchtige Präsenz, keine Datenbank',
+        term_retention_k: 'Aufbewahrung',
+        term_retention_v: 'verschwindet, sobald du die App schließt',
+        btn_skip: 'Überspringen',
+        btn_allow: 'Region teilen',
+        btn_again: 'Nochmal halten',
+        btn_share: 'Teilen',
+        card_text: 'Du hast mit<br><strong>{n}</strong> anderen gehalten.',
+        card_text_alone: 'Du hast allein gehalten.<br>Andere werden es spüren.',
+        share_text: 'Ich habe mit {n} anderen gehalten.',
+        share_text_alone: 'Ich habe die Welt gehalten.',
+        share_tagline: 'die Welt, zusammengehalten',
+        confirm_remove: 'Dein Licht von der Karte entfernen?',
+        err_denied: 'Ortungszugriff verweigert. Du kannst es jederzeit erneut versuchen.',
+        err_generic: 'Ort konnte nicht gelesen werden. Erneut versuchen?',
+        err_unsupported: 'Ortung ist auf diesem Gerät nicht verfügbar.',
+        mode_sim: 'v0.4 · simuliert',
+        mode_connecting: 'v0.4 · verbinde…',
+        mode_live: 'v0.4 · live',
+        mode_offline: 'v0.4 · offline',
+      },
+      es: {
+        label: 'ES',
+        counter_label: 'Sosteniendo ahora',
+        join_link: 'Únete al mapa →',
+        join_link_on: 'En el mapa · quitar',
+        tagline: 'Presiona el mundo. Sostén el mundo.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'calculando…',
+        sheet_label: 'Únete al mapa',
+        sheet_title: 'Muéstrale al mundo desde dónde sostienes.',
+        sheet_body: 'Un punto luminoso aparece en el globo en tu región aproximada. <em>Sin nombre, sin cuenta, sin rastreo.</em> Puedes quitarlo cuando quieras.',
+        term_precision_k: 'Precisión',
+        term_precision_v: 'región difusa de ~50 km, nunca exacta',
+        term_anonymity_k: 'Anonimato',
+        term_anonymity_v: 'ninguna identidad vinculada a tu luz',
+        term_storage_k: 'Almacenamiento',
+        term_storage_v: 'solo presencia efímera, sin base de datos',
+        term_retention_k: 'Retención',
+        term_retention_v: 'desaparece al cerrar la app',
+        btn_skip: 'Saltar',
+        btn_allow: 'Compartir mi región',
+        btn_again: 'Sostener de nuevo',
+        btn_share: 'Compartir',
+        card_text: 'Sostuviste con<br><strong>{n}</strong> personas más.',
+        card_text_alone: 'Sostuviste a solas.<br>Otros lo sentirán.',
+        share_text: 'Sostuve con {n} personas más.',
+        share_text_alone: 'Sostuve el mundo.',
+        share_tagline: 'el mundo, sostenido juntos',
+        confirm_remove: '¿Quitar tu luz del mapa?',
+        err_denied: 'Permiso de ubicación denegado. Puedes intentarlo de nuevo cuando quieras.',
+        err_generic: 'No se pudo leer la ubicación. ¿Intentar de nuevo?',
+        err_unsupported: 'La geolocalización no está disponible en este dispositivo.',
+        mode_sim: 'v0.4 · simulado',
+        mode_connecting: 'v0.4 · conectando…',
+        mode_live: 'v0.4 · en vivo',
+        mode_offline: 'v0.4 · offline',
+      },
+      'pt-BR': {
+        label: 'PT',
+        counter_label: 'Segurando agora',
+        join_link: 'Entre no mapa →',
+        join_link_on: 'No mapa · remover',
+        tagline: 'Pressione o mundo. Segure o mundo.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'calculando…',
+        sheet_label: 'Entre no mapa',
+        sheet_title: 'Mostre ao mundo de onde você está segurando.',
+        sheet_body: 'Um ponto luminoso aparece no globo na sua região aproximada. <em>Sem nome, sem conta, sem rastreamento.</em> Você pode remover a qualquer momento.',
+        term_precision_k: 'Precisão',
+        term_precision_v: 'região difusa de ~50 km, nunca exata',
+        term_anonymity_k: 'Anonimato',
+        term_anonymity_v: 'nenhuma identidade vinculada à sua luz',
+        term_storage_k: 'Armazenamento',
+        term_storage_v: 'apenas presença efêmera, sem banco de dados',
+        term_retention_k: 'Retenção',
+        term_retention_v: 'desaparece quando você fecha o app',
+        btn_skip: 'Pular',
+        btn_allow: 'Compartilhar minha região',
+        btn_again: 'Segurar de novo',
+        btn_share: 'Compartilhar',
+        card_text: 'Você segurou com<br><strong>{n}</strong> outras pessoas.',
+        card_text_alone: 'Você segurou sozinho.<br>Outros vão sentir.',
+        share_text: 'Segurei com {n} outras pessoas.',
+        share_text_alone: 'Segurei o mundo.',
+        share_tagline: 'o mundo, segurado juntos',
+        confirm_remove: 'Remover sua luz do mapa?',
+        err_denied: 'Permissão de localização negada. Você pode tentar novamente quando quiser.',
+        err_generic: 'Não foi possível ler a localização. Tentar novamente?',
+        err_unsupported: 'Geolocalização não disponível neste dispositivo.',
+        mode_sim: 'v0.4 · simulado',
+        mode_connecting: 'v0.4 · conectando…',
+        mode_live: 'v0.4 · ao vivo',
+        mode_offline: 'v0.4 · offline',
+      },
+      fr: {
+        label: 'FR',
+        counter_label: 'À tenir maintenant',
+        join_link: 'Rejoindre la carte →',
+        join_link_on: 'Sur la carte · retirer',
+        tagline: 'Touche le monde. Tiens le monde.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'calcul en cours…',
+        sheet_label: 'Rejoindre la carte',
+        sheet_title: "Montre au monde d'où tu tiens.",
+        sheet_body: 'Un point lumineux apparaît sur le globe dans ta région approximative. <em>Pas de nom, pas de compte, pas de suivi.</em> Tu peux le retirer à tout moment.',
+        term_precision_k: 'Précision',
+        term_precision_v: 'région floue de ~50 km, jamais exacte',
+        term_anonymity_k: 'Anonymat',
+        term_anonymity_v: 'aucune identité liée à ta lumière',
+        term_storage_k: 'Stockage',
+        term_storage_v: 'présence éphémère, aucune base de données',
+        term_retention_k: 'Conservation',
+        term_retention_v: "disparaît dès que tu fermes l'app",
+        btn_skip: 'Passer',
+        btn_allow: 'Partager ma région',
+        btn_again: 'Tenir à nouveau',
+        btn_share: 'Partager',
+        card_text: 'Tu as tenu avec<br><strong>{n}</strong> autres.',
+        card_text_alone: "Tu as tenu seul.<br>D'autres le sentiront.",
+        share_text: "J'ai tenu avec {n} autres.",
+        share_text_alone: "J'ai tenu le monde.",
+        share_tagline: 'le monde, tenu ensemble',
+        confirm_remove: 'Retirer ta lumière de la carte ?',
+        err_denied: 'Autorisation de localisation refusée. Tu peux réessayer à tout moment.',
+        err_generic: "Impossible de lire la localisation. Réessayer ?",
+        err_unsupported: "La géolocalisation n'est pas disponible sur cet appareil.",
+        mode_sim: 'v0.4 · simulé',
+        mode_connecting: 'v0.4 · connexion…',
+        mode_live: 'v0.4 · en direct',
+        mode_offline: 'v0.4 · hors ligne',
+      },
+      it: {
+        label: 'IT',
+        counter_label: 'Stanno tenendo',
+        join_link: 'Unisciti alla mappa →',
+        join_link_on: 'Sulla mappa · rimuovi',
+        tagline: 'Premi il mondo. Tieni il mondo.',
+        countdown_prefix: 'THE 11:11 ·',
+        countdown_calc: 'in calcolo…',
+        sheet_label: 'Unisciti alla mappa',
+        sheet_title: 'Mostra al mondo da dove stai tenendo.',
+        sheet_body: 'Un punto luminoso appare sul globo nella tua regione approssimativa. <em>Nessun nome, nessun account, nessun tracciamento.</em> Puoi rimuoverlo in qualsiasi momento.',
+        term_precision_k: 'Precisione',
+        term_precision_v: 'regione sfocata di ~50 km, mai esatta',
+        term_anonymity_k: 'Anonimato',
+        term_anonymity_v: 'nessuna identità legata alla tua luce',
+        term_storage_k: 'Archiviazione',
+        term_storage_v: 'solo presenza effimera, nessun database',
+        term_retention_k: 'Conservazione',
+        term_retention_v: "scompare quando chiudi l'app",
+        btn_skip: 'Salta',
+        btn_allow: 'Condividi la mia regione',
+        btn_again: 'Tieni ancora',
+        btn_share: 'Condividi',
+        card_text: 'Hai tenuto con<br><strong>{n}</strong> altre persone.',
+        card_text_alone: 'Hai tenuto da solo.<br>Altri lo sentiranno.',
+        share_text: 'Ho tenuto con {n} altre persone.',
+        share_text_alone: 'Ho tenuto il mondo.',
+        share_tagline: 'il mondo, tenuto insieme',
+        confirm_remove: 'Rimuovere la tua luce dalla mappa?',
+        err_denied: 'Permesso di localizzazione negato. Puoi riprovare quando vuoi.',
+        err_generic: 'Impossibile leggere la posizione. Riprovare?',
+        err_unsupported: 'Geolocalizzazione non disponibile su questo dispositivo.',
+        mode_sim: 'v0.4 · simulato',
+        mode_connecting: 'v0.4 · connessione…',
+        mode_live: 'v0.4 · dal vivo',
+        mode_offline: 'v0.4 · offline',
+      },
+    };
+
+    const LANG_ORDER = ['en', 'de', 'es', 'pt-BR', 'fr', 'it'];
+    let currentLang = 'en';
+
+    function detectLanguage() {
+      try {
+        const saved = localStorage.getItem('hold.lang');
+        if (saved && I18N[saved]) return saved;
+      } catch (_) {}
+      const browser = (navigator.language || 'en').toLowerCase();
+      if (browser.startsWith('de')) return 'de';
+      if (browser.startsWith('es')) return 'es';
+      if (browser.startsWith('pt')) return 'pt-BR';
+      if (browser.startsWith('fr')) return 'fr';
+      if (browser.startsWith('it')) return 'it';
+      return 'en';
+    }
+
+    function t(key) {
+      return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+    }
+
+    function setLanguage(lang) {
+      if (!I18N[lang]) return;
+      currentLang = lang;
+      try { localStorage.setItem('hold.lang', lang); } catch (_) {}
+      document.documentElement.lang = lang;
+      applyI18n();
+      renderLangSwitch();
+      updateJoinButton();
+      renderSheetDynamicContent();
+      updateModeIndicator();
+      // Broadcast language so dots show proper locale in future features
+      broadcastPresence();
+    }
+
+    function applyI18n() {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        const val = t(key);
+        if (/<[a-z]/i.test(val)) el.innerHTML = val;
+        else el.textContent = val;
+      });
+    }
+
+    function renderLangSwitch() {
+      const box = document.getElementById('langSwitch');
+      box.innerHTML = '';
+      LANG_ORDER.forEach((lang, i) => {
+        if (i > 0) {
+          const sep = document.createElement('span');
+          sep.className = 'lang-sep'; sep.textContent = '·';
+          box.appendChild(sep);
+        }
+        const btn = document.createElement('button');
+        btn.className = 'lang-btn' + (lang === currentLang ? ' active' : '');
+        btn.textContent = I18N[lang].label;
+        btn.addEventListener('click', (e) => { e.stopPropagation(); setLanguage(lang); });
+        box.appendChild(btn);
+      });
+    }
+
+    function renderSheetDynamicContent() {
+      document.getElementById('sheetBody').innerHTML = t('sheet_body');
+      const terms = document.getElementById('sheetTerms');
+      const rows = [
+        ['term_precision_k', 'term_precision_v'],
+        ['term_anonymity_k', 'term_anonymity_v'],
+        ['term_storage_k', 'term_storage_v'],
+        ['term_retention_k', 'term_retention_v'],
+      ];
+      terms.innerHTML = rows.map(([k, v]) =>
+        `<span class="k">${t(k)}</span> · ${t(v)}`
+      ).join('<br />');
+    }
+
     // ═══════════════════════════════════════════════════════════
     //  STATE
     // ═══════════════════════════════════════════════════════════
@@ -449,19 +782,22 @@
       timerInterval: null,
       activePointerId: null,
 
-      // Globe rotation
-      rotation: 0,          // radians around Y axis (longitude offset)
-      rotationSpeed: 0.0006, // radians per frame when idle
-      tilt: 0.35,           // radians around X axis (visual tilt)
+      rotation: 0,
+      rotationSpeed: 0.0006,
+      tilt: 0.35,
 
-      // Locations
-      seedDots: [],         // pre-seeded fake presences
+      seedDots: [],
       visibleSeeds: new Set(),
-      userDot: null,        // { lat, lon } if opted-in
+      userDot: null,
 
-      // Animation
       rafId: null,
       lastFrameTime: 0,
+
+      // Supabase
+      myId: (crypto.randomUUID && crypto.randomUUID()) || ('u-' + Math.random().toString(36).slice(2) + Date.now().toString(36)),
+      liveUsers: new Map(), // key → { id, location: {lat, lon}, holding, lang }
+      supabaseChannel: null,
+      connectionStatus: SUPABASE_ENABLED ? 'connecting' : 'sim',
     };
 
     const el = {
@@ -470,6 +806,7 @@
       globeWrap:   document.getElementById('globeWrap'),
       canvas:      document.getElementById('globeCanvas'),
       counter:     document.getElementById('counter'),
+      modeInd:     document.getElementById('modeIndicator'),
       timer:       document.getElementById('timer'),
       countdown:   document.getElementById('next1111'),
       joinBtn:     document.getElementById('joinBtn'),
@@ -488,30 +825,24 @@
     let cw = 0, ch = 0, cr = 0;
 
     // ═══════════════════════════════════════════════════════════
-    //  SEED LOCATIONS (~60 organic global coordinates)
+    //  SEED LOCATIONS (ambient trails)
+    //  In SIM mode: primary dots
+    //  In LIVE mode: dimmed background (geographic spread hint)
     // ═══════════════════════════════════════════════════════════
-    // lat, lon (degrees)
     const SEED_COORDS = [
-      // Europe
       [52.5, 13.4], [48.9, 2.3], [51.5, -0.1], [40.4, -3.7], [41.9, 12.5],
       [59.3, 18.1], [52.2, 21.0], [38.7, -9.1], [55.7, 12.6], [50.1, 14.4],
       [47.5, 19.0], [41.0, 28.9], [55.8, 37.6], [59.9, 30.3], [60.2, 24.9],
-      // Americas
       [40.7, -74.0], [34.1, -118.2], [41.9, -87.6], [43.7, -79.4], [37.8, -122.4],
       [25.8, -80.2], [30.3, -97.7], [19.4, -99.1], [-23.5, -46.6], [-34.6, -58.4],
       [-12.0, -77.0], [4.6, -74.1], [-33.4, -70.7],
-      // Africa
       [6.5, 3.4], [30.0, 31.2], [-33.9, 18.4], [-1.3, 36.8], [-26.2, 28.0],
       [9.0, 38.8], [31.6, -8.0], [-4.3, 15.3],
-      // Asia
       [35.7, 139.7], [37.6, 126.9], [19.1, 72.9], [12.9, 77.6], [1.3, 103.8],
       [13.8, 100.5], [-6.2, 106.8], [14.6, 121.0], [31.2, 121.5], [22.3, 114.2],
       [28.6, 77.2], [23.8, 90.4], [41.3, 69.2], [3.1, 101.7],
-      // Middle East
       [25.2, 55.3], [32.1, 34.8], [24.7, 46.7], [33.3, 44.4], [35.7, 51.4],
-      // Oceania
       [-33.9, 151.2], [-37.8, 145.0], [-36.9, 174.8], [-17.7, 168.3],
-      // Sparse — smaller presences
       [64.1, -21.9], [-25.3, -57.6], [35.9, 14.5],
     ];
 
@@ -520,20 +851,16 @@
         lat: c[0] * Math.PI / 180,
         lon: c[1] * Math.PI / 180,
         id: i,
-        brightness: 0.5 + Math.random() * 0.5,
         baseBrightness: 0.5 + Math.random() * 0.5,
         pulsePhase: Math.random() * Math.PI * 2,
       }));
-      // Start with ~70% visible
       state.seedDots.forEach(d => {
         if (Math.random() < 0.72) state.visibleSeeds.add(d.id);
       });
     }
 
-    // Churn: fade in/out seed dots over time to feel alive
     function churnSeeds() {
       if (state.seedDots.length === 0) return;
-      // Pick 1-2 to toggle
       const count = 1 + (Math.random() < 0.3 ? 1 : 0);
       for (let i = 0; i < count; i++) {
         const target = state.seedDots[Math.floor(Math.random() * state.seedDots.length)];
@@ -560,13 +887,11 @@
     }
     window.addEventListener('resize', resizeCanvas);
 
-    // Project (lat, lon) → {x, y, z'} with current rotation + tilt
     function project(lat, lon, rot = state.rotation, tilt = state.tilt) {
       const cosLat = Math.cos(lat);
       const x = cosLat * Math.sin(lon + rot);
       let y = Math.sin(lat);
       let z = cosLat * Math.cos(lon + rot);
-      // Tilt around X
       const cosT = Math.cos(tilt), sinT = Math.sin(tilt);
       const y2 = y * cosT - z * sinT;
       const z2 = y * sinT + z * cosT;
@@ -575,200 +900,199 @@
 
     function drawGlobe(time) {
       ctx.clearRect(0, 0, cw, ch);
-
       const cx = cw / 2, cy = ch / 2;
 
-      // Outer sphere subtle fill
+      // Sphere fill
       ctx.save();
       const sphereGrad = ctx.createRadialGradient(cx - cr * 0.25, cy - cr * 0.3, 0, cx, cy, cr * 1.1);
       sphereGrad.addColorStop(0, 'rgba(244, 228, 184, 0.025)');
       sphereGrad.addColorStop(0.7, 'rgba(244, 228, 184, 0.008)');
       sphereGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = sphereGrad;
-      ctx.beginPath();
-      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
 
-      // ─── Latitude lines ───
+      // Wireframe
       ctx.strokeStyle = 'rgba(236, 231, 221, 0.09)';
       ctx.lineWidth = 0.6;
       for (let latDeg = -75; latDeg <= 75; latDeg += 15) {
-        const lat = latDeg * Math.PI / 180;
-        drawParallel(cx, cy, lat);
+        drawParallel(cx, cy, latDeg * Math.PI / 180);
       }
-
-      // ─── Meridians (longitude lines) ───
       for (let lonDeg = 0; lonDeg < 360; lonDeg += 30) {
-        const lon = lonDeg * Math.PI / 180;
-        drawMeridian(cx, cy, lon);
+        drawMeridian(cx, cy, lonDeg * Math.PI / 180);
       }
 
-      // ─── Outer ring ───
       ctx.strokeStyle = 'rgba(236, 231, 221, 0.16)';
       ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, cr, 0, Math.PI * 2); ctx.stroke();
 
-      // ─── Seed dots ───
-      state.seedDots.forEach(d => {
-        if (!state.visibleSeeds.has(d.id)) return;
-        const p = project(d.lat, d.lon);
-        if (p.z < 0) return; // behind globe
+      // Seed dots (dimmed in LIVE mode, full in SIM)
+      const seedAlpha = (state.connectionStatus === 'live') ? 0.28 : 1.0;
+      if (seedAlpha > 0) {
+        state.seedDots.forEach(d => {
+          if (!state.visibleSeeds.has(d.id)) return;
+          const p = project(d.lat, d.lon);
+          if (p.z < 0) return;
+          const depthAlpha = 0.35 + 0.65 * p.z;
+          const sx = cx + cr * p.x, sy = cy - cr * p.y;
+          const pulse = 0.8 + 0.2 * Math.sin(time * 0.0014 + d.pulsePhase);
+          const brightness = d.baseBrightness * pulse * depthAlpha * seedAlpha;
 
-        // Depth fade
-        const depthAlpha = 0.35 + 0.65 * p.z;
-        const screenX = cx + cr * p.x;
-        const screenY = cy - cr * p.y;
+          ctx.save();
+          const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 6);
+          glow.addColorStop(0, `rgba(244, 228, 184, ${0.5 * brightness})`);
+          glow.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(sx - 10, sy - 10, 20, 20);
+          ctx.fillStyle = `rgba(244, 228, 184, ${Math.min(1, brightness * 1.3)})`;
+          ctx.beginPath(); ctx.arc(sx, sy, 1.4, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        });
+      }
 
-        // Subtle pulse
-        const pulse = 0.8 + 0.2 * Math.sin(time * 0.0014 + d.pulsePhase);
-        const brightness = d.baseBrightness * pulse * depthAlpha;
+      // LIVE users on globe (real presence)
+      if (state.connectionStatus === 'live') {
+        state.liveUsers.forEach(u => {
+          if (!u.location || u.id === state.myId) return; // skip self (drawn separately)
+          const p = project(u.location.lat, u.location.lon);
+          if (p.z < 0) return;
+          const sx = cx + cr * p.x, sy = cy - cr * p.y;
+          const depth = 0.5 + 0.5 * p.z;
+          const pulse = 0.75 + 0.25 * Math.sin(time * 0.002 + (u.id.charCodeAt(0) || 0));
+          const intensity = u.holding ? 1.0 : 0.75;
 
-        // Glow
-        ctx.save();
-        const glow = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, 6);
-        glow.addColorStop(0, `rgba(244, 228, 184, ${0.5 * brightness})`);
-        glow.addColorStop(1, 'rgba(244, 228, 184, 0)');
-        ctx.fillStyle = glow;
-        ctx.fillRect(screenX - 10, screenY - 10, 20, 20);
+          ctx.save();
+          // Glow
+          const gl = ctx.createRadialGradient(sx, sy, 0, sx, sy, u.holding ? 24 : 14);
+          gl.addColorStop(0, `rgba(244, 228, 184, ${0.55 * pulse * intensity * depth})`);
+          gl.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          ctx.fillStyle = gl;
+          const gs = u.holding ? 32 : 20;
+          ctx.fillRect(sx - gs, sy - gs, gs * 2, gs * 2);
 
-        // Core
-        ctx.fillStyle = `rgba(244, 228, 184, ${Math.min(1, brightness * 1.3)})`;
-        ctx.beginPath();
-        ctx.arc(screenX, screenY, 1.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
+          // Ring for holders
+          if (u.holding) {
+            ctx.strokeStyle = `rgba(244, 228, 184, ${0.7 * pulse})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(sx, sy, 4 + 2 * pulse, 0, Math.PI * 2); ctx.stroke();
+          }
 
-      // ─── User dot (if joined) ───
+          // Core
+          ctx.fillStyle = `rgba(244, 228, 184, ${intensity * depth})`;
+          ctx.beginPath(); ctx.arc(sx, sy, u.holding ? 2.2 : 1.6, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      // User's own dot
       if (state.userDot) {
         const p = project(state.userDot.lat, state.userDot.lon);
         if (p.z >= 0) {
-          const screenX = cx + cr * p.x;
-          const screenY = cy - cr * p.y;
+          const sx = cx + cr * p.x, sy = cy - cr * p.y;
           const pulse = 0.7 + 0.3 * Math.sin(time * 0.003);
           const intensity = state.isHolding ? 1 : 0.85;
 
-          // Outer glow
           ctx.save();
-          const uGlow = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, 22);
+          const uGlow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 22);
           uGlow.addColorStop(0, `rgba(244, 228, 184, ${0.6 * pulse * intensity})`);
           uGlow.addColorStop(1, 'rgba(244, 228, 184, 0)');
           ctx.fillStyle = uGlow;
-          ctx.fillRect(screenX - 30, screenY - 30, 60, 60);
+          ctx.fillRect(sx - 30, sy - 30, 60, 60);
 
-          // Ring
           ctx.strokeStyle = `rgba(244, 228, 184, ${0.8 * intensity})`;
           ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(screenX, screenY, 5 + 2 * pulse, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.beginPath(); ctx.arc(sx, sy, 5 + 2 * pulse, 0, Math.PI * 2); ctx.stroke();
 
-          // Core
           ctx.fillStyle = 'rgba(244, 228, 184, 1)';
-          ctx.beginPath();
-          ctx.arc(screenX, screenY, 2.2, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.beginPath(); ctx.arc(sx, sy, 2.2, 0, Math.PI * 2); ctx.fill();
           ctx.restore();
         }
       }
 
-      // ─── Holding: outgoing wave from center ───
+      // Hold waves
       if (state.isHolding) {
         const elapsed = (time - state.holdStart);
         const waveCycle = 2800;
-        const waves = 2;
-        for (let w = 0; w < waves; w++) {
-          const phase = ((elapsed + w * waveCycle / waves) % waveCycle) / waveCycle;
+        for (let w = 0; w < 2; w++) {
+          const phase = ((elapsed + w * waveCycle / 2) % waveCycle) / waveCycle;
           const radius = cr * (0.15 + phase * 1.1);
           const alpha = (1 - phase) * 0.25;
           ctx.save();
           ctx.strokeStyle = `rgba(244, 228, 184, ${alpha})`;
           ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
           ctx.restore();
         }
-
-        // Bright center
         ctx.save();
         const holdGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr * 0.4);
         holdGlow.addColorStop(0, 'rgba(244, 228, 184, 0.15)');
         holdGlow.addColorStop(1, 'rgba(244, 228, 184, 0)');
         ctx.fillStyle = holdGlow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, cr * 0.4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, cr * 0.4, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
     }
 
-    // Draw a parallel (latitude line) — only the front-facing arc
     function drawParallel(cx, cy, lat) {
-      const step = 0.08; // radians
-      let started = false;
+      const step = 0.08; let started = false;
       ctx.beginPath();
       for (let lon = 0; lon <= Math.PI * 2 + step; lon += step) {
         const p = project(lat, lon);
         if (p.z >= 0) {
-          const x = cx + cr * p.x;
-          const y = cy - cr * p.y;
+          const x = cx + cr * p.x, y = cy - cr * p.y;
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
-        } else {
-          started = false;
-        }
+        } else { started = false; }
       }
       ctx.stroke();
     }
 
     function drawMeridian(cx, cy, lon) {
-      const step = 0.06;
-      let started = false;
+      const step = 0.06; let started = false;
       ctx.beginPath();
       for (let lat = -Math.PI / 2; lat <= Math.PI / 2 + step; lat += step) {
         const p = project(lat, lon);
         if (p.z >= 0) {
-          const x = cx + cr * p.x;
-          const y = cy - cr * p.y;
+          const x = cx + cr * p.x, y = cy - cr * p.y;
           if (!started) { ctx.moveTo(x, y); started = true; }
           else { ctx.lineTo(x, y); }
-        } else {
-          started = false;
-        }
+        } else { started = false; }
       }
       ctx.stroke();
     }
 
-    // Animation loop
     function renderLoop(time) {
-      // Rotation — slow down when holding
       const targetSpeed = state.isHolding ? 0.00008 : 0.00055;
       state.rotationSpeed += (targetSpeed - state.rotationSpeed) * 0.04;
       state.rotation += state.rotationSpeed * Math.min(32, time - state.lastFrameTime || 16);
       state.lastFrameTime = time;
-
       drawGlobe(time);
       state.rafId = requestAnimationFrame(renderLoop);
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  COUNTER (fake live count)
+    //  COUNTER (SIM: fake drift · LIVE: count of real holders)
     // ═══════════════════════════════════════════════════════════
-    function initCounter() {
+    function formatCount(n) {
+      try { return n.toLocaleString(currentLang); }
+      catch (_) { return n.toLocaleString('en-US'); }
+    }
+
+    function updateCounter() {
+      el.counter.textContent = formatCount(state.counter);
+    }
+
+    // Simulation mode: fake counter with peaks & drift
+    function initSimCounter() {
       const hour = new Date().getUTCHours();
       const peakFactor = 1 + 0.35 * Math.sin((hour - 4) * Math.PI / 12);
       state.counter = Math.floor((8200 + Math.random() * 3400) * peakFactor);
       state.targetCounter = state.counter;
       updateCounter();
     }
-    function updateCounter() {
-      el.counter.textContent = state.counter.toLocaleString('en-US');
-    }
-    function counterTick() {
+
+    function simCounterTick() {
+      if (state.connectionStatus === 'live') return; // live mode handles counter via presence
       const drift = Math.floor((Math.random() - 0.5) * 14);
       state.targetCounter = Math.max(1000, state.targetCounter + drift);
       if (Math.random() < 0.035) {
@@ -780,7 +1104,34 @@
         updateCounter();
       }
     }
-    setInterval(counterTick, 850);
+    setInterval(simCounterTick, 850);
+
+    // Live mode: count of users currently holding (including self)
+    function recalcLiveCounter() {
+      if (state.connectionStatus !== 'live') return;
+      let holding = 0;
+      state.liveUsers.forEach(u => { if (u.holding) holding++; });
+      // Ensure self is counted even before presence round-trip
+      if (state.isHolding) {
+        const selfInMap = Array.from(state.liveUsers.values()).some(u => u.id === state.myId && u.holding);
+        if (!selfInMap) holding += 1;
+      }
+      state.counter = holding;
+      updateCounter();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  MODE INDICATOR
+    // ═══════════════════════════════════════════════════════════
+    function updateModeIndicator() {
+      const status = state.connectionStatus;
+      const key = status === 'live' ? 'mode_live'
+                : status === 'connecting' ? 'mode_connecting'
+                : status === 'offline' ? 'mode_offline'
+                : 'mode_sim';
+      el.modeInd.textContent = t(key);
+      el.modeInd.classList.toggle('live', status === 'live');
+    }
 
     // ═══════════════════════════════════════════════════════════
     //  HOLD MECHANIC
@@ -794,7 +1145,14 @@
       state.holdStart = performance.now();
       el.body.classList.add('holding');
       if (navigator.vibrate) navigator.vibrate(8);
-      state.targetCounter += 1;
+
+      if (state.connectionStatus === 'live') {
+        broadcastPresence();
+        recalcLiveCounter();
+      } else {
+        state.targetCounter += 1;
+      }
+
       state.timerInterval = setInterval(() => {
         const elapsed = (performance.now() - state.holdStart) / 1000;
         el.timer.textContent = elapsed.toFixed(1) + 's';
@@ -813,7 +1171,13 @@
 
       const duration = (performance.now() - state.holdStart) / 1000;
       state.holdDuration = duration;
-      state.targetCounter = Math.max(1000, state.targetCounter - 1);
+
+      if (state.connectionStatus === 'live') {
+        broadcastPresence();
+        recalcLiveCounter();
+      } else {
+        state.targetCounter = Math.max(1000, state.targetCounter - 1);
+      }
 
       clearInterval(state.timerInterval);
       el.timer.textContent = '0.0s';
@@ -829,9 +1193,9 @@
     el.stage.addEventListener('contextmenu',   e => e.preventDefault());
 
     // ═══════════════════════════════════════════════════════════
-    //  LOCATION — opt-in flow (local-only for v0.2)
+    //  LOCATION
     // ═══════════════════════════════════════════════════════════
-    const STORAGE_KEY = 'hold.userDot.v02';
+    const STORAGE_KEY = 'hold.userDot.v04';
 
     function loadUserDot() {
       try {
@@ -847,46 +1211,35 @@
     }
 
     function saveUserDot(dot) {
-      try {
-        if (window.localStorage) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(dot));
-        }
-      } catch (_) {}
+      try { if (window.localStorage) localStorage.setItem(STORAGE_KEY, JSON.stringify(dot)); } catch (_) {}
     }
 
     function clearUserDot() {
       state.userDot = null;
       try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
       updateJoinButton();
+      broadcastPresence();
     }
 
     function updateJoinButton() {
       if (state.userDot) {
-        el.joinBtn.textContent = 'On the map · remove';
+        el.joinBtn.textContent = t('join_link_on');
         el.joinBtn.classList.add('joined');
       } else {
-        el.joinBtn.textContent = 'Join the map →';
+        el.joinBtn.textContent = t('join_link');
         el.joinBtn.classList.remove('joined');
       }
     }
 
-    function openSheet() {
-      el.sheetBack.classList.add('visible');
-    }
-    function closeSheet() {
-      el.sheetBack.classList.remove('visible');
-    }
+    function openSheet() { el.sheetBack.classList.add('visible'); }
+    function closeSheet() { el.sheetBack.classList.remove('visible'); }
 
-    function fuzzyCoord(c) {
-      // Round to ~0.5° = ~50km at equator
-      return Math.round(c * 2) / 2;
-    }
+    function fuzzyCoord(c) { return Math.round(c * 2) / 2; }
 
     function requestLocation() {
       if (!navigator.geolocation) {
-        alert('Geolocation is not available on this device.');
-        closeSheet();
-        return;
+        alert(t('err_unsupported'));
+        closeSheet(); return;
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -901,17 +1254,12 @@
           updateJoinButton();
           closeSheet();
           if (navigator.vibrate) navigator.vibrate([8, 30, 16]);
-
-          // Rotate globe so user's dot becomes visible (nice welcome)
           state.rotation = -state.userDot.lon + 0.1;
+          broadcastPresence();
         },
         (err) => {
           closeSheet();
-          setTimeout(() => alert(
-            err.code === 1
-              ? 'Location permission denied. You can try again anytime.'
-              : 'Could not read location. Try again?'
-          ), 300);
+          setTimeout(() => alert(err.code === 1 ? t('err_denied') : t('err_generic')), 300);
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
       );
@@ -920,9 +1268,7 @@
     el.joinBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (state.userDot) {
-        if (confirm('Remove your light from the map?')) {
-          clearUserDot();
-        }
+        if (confirm(t('confirm_remove'))) clearUserDot();
       } else {
         openSheet();
       }
@@ -943,13 +1289,26 @@
       return m + 'm ' + String(s).padStart(2, '0') + 's';
     }
 
+    function getOtherCount() {
+      if (state.connectionStatus === 'live') {
+        let holding = 0;
+        state.liveUsers.forEach(u => {
+          if (u.holding && u.id !== state.myId) holding++;
+        });
+        return holding;
+      }
+      // Sim: counter minus 1 (self)
+      return Math.max(0, state.counter - 1);
+    }
+
     function showCard(duration) {
       el.cardTime.textContent = formatDuration(duration);
-      const countOther = Math.max(1, state.counter - 1);
-      el.cardText.innerHTML =
-        'You held with<br><strong>' +
-        countOther.toLocaleString('en-US') +
-        '</strong> others.';
+      const others = getOtherCount();
+      if (others === 0) {
+        el.cardText.innerHTML = t('card_text_alone');
+      } else {
+        el.cardText.innerHTML = t('card_text').replace('{n}', formatCount(others));
+      }
       drawCardGlobe();
       el.cardOverlay.classList.add('visible');
       if (navigator.vibrate) navigator.vibrate([10, 40, 10]);
@@ -957,7 +1316,6 @@
     function hideCard() { el.cardOverlay.classList.remove('visible'); }
     el.btnAgain.addEventListener('click', hideCard);
 
-    // Mini globe inside the share card — night-lights style
     function drawCardGlobe() {
       const cnv = el.cardGlobe;
       const dpr = window.devicePixelRatio || 1;
@@ -969,35 +1327,41 @@
       c.clearRect(0, 0, size, size);
 
       const cx = size / 2, cy = size / 2, r = size * 0.44;
-
-      // Dark sphere
       const sGrad = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx, cy, r);
       sGrad.addColorStop(0, '#121010');
       sGrad.addColorStop(1, '#050505');
       c.fillStyle = sGrad;
       c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
 
-      // Outer ring
       c.strokeStyle = 'rgba(244, 228, 184, 0.18)';
       c.lineWidth = 0.8;
       c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
 
-      // Dots: use current rotation from main globe
-      const rot = state.rotation;
-      const tilt = state.tilt;
-
+      // Seed dots (always shown on card for visual richness)
       state.seedDots.forEach(d => {
         if (!state.visibleSeeds.has(d.id)) return;
-        const p = project(d.lat, d.lon, rot, tilt);
+        const p = project(d.lat, d.lon);
         if (p.z < 0) return;
         const x = cx + r * p.x, y = cy - r * p.y;
         const depth = 0.4 + 0.6 * p.z;
-        c.fillStyle = `rgba(244, 228, 184, ${0.75 * depth})`;
+        c.fillStyle = `rgba(244, 228, 184, ${0.55 * depth})`;
         c.beginPath(); c.arc(x, y, 0.9, 0, Math.PI * 2); c.fill();
       });
 
+      // Live users
+      if (state.connectionStatus === 'live') {
+        state.liveUsers.forEach(u => {
+          if (!u.location || u.id === state.myId) return;
+          const p = project(u.location.lat, u.location.lon);
+          if (p.z < 0) return;
+          const x = cx + r * p.x, y = cy - r * p.y;
+          c.fillStyle = `rgba(244, 228, 184, ${u.holding ? 1 : 0.8})`;
+          c.beginPath(); c.arc(x, y, u.holding ? 1.4 : 1.0, 0, Math.PI * 2); c.fill();
+        });
+      }
+
       if (state.userDot) {
-        const p = project(state.userDot.lat, state.userDot.lon, rot, tilt);
+        const p = project(state.userDot.lat, state.userDot.lon);
         if (p.z >= 0) {
           const x = cx + r * p.x, y = cy - r * p.y;
           const g = c.createRadialGradient(x, y, 0, x, y, 10);
@@ -1013,20 +1377,19 @@
 
     el.btnShare.addEventListener('click', async () => {
       try {
-        const canvas = await generateShareImage(state.holdDuration, state.counter);
+        const canvas = await generateShareImage(state.holdDuration);
         canvas.toBlob(async (blob) => {
           if (!blob) return;
           const file = new File([blob], 'hold.png', { type: 'image/png' });
-          const shareData = {
-            files: [file], title: 'HOLD',
-            text: 'I held with ' + state.counter.toLocaleString('en-US') + ' others.',
-          };
+          const others = getOtherCount();
+          const shareText = others === 0
+            ? t('share_text_alone')
+            : t('share_text').replace('{n}', formatCount(others));
+          const shareData = { files: [file], title: 'HOLD', text: shareText };
           if (navigator.canShare && navigator.canShare(shareData)) {
             try { await navigator.share(shareData); }
             catch (err) { if (err.name !== 'AbortError') downloadImage(blob); }
-          } else {
-            downloadImage(blob);
-          }
+          } else { downloadImage(blob); }
         }, 'image/png');
       } catch (err) { console.warn('Share failed', err); }
     });
@@ -1039,7 +1402,7 @@
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     }
 
-    async function generateShareImage(duration, others) {
+    async function generateShareImage(duration) {
       await document.fonts.ready;
       try {
         await Promise.all([
@@ -1055,47 +1418,56 @@
       canvas.width = W; canvas.height = H;
       const c = canvas.getContext('2d');
 
-      // Background
       c.fillStyle = '#050505'; c.fillRect(0, 0, W, H);
       const bgGrd = c.createRadialGradient(W/2, H/2 - 200, 0, W/2, H/2 - 200, W/1.2);
       bgGrd.addColorStop(0, 'rgba(244, 228, 184, 0.09)');
       bgGrd.addColorStop(1, 'rgba(244, 228, 184, 0)');
       c.fillStyle = bgGrd; c.fillRect(0, 0, W, H);
 
-      // Night-lights globe centered top
       const gcx = W/2, gcy = 380, gR = 170;
-
-      // Subtle sphere
       const sGrad = c.createRadialGradient(gcx - gR * 0.3, gcy - gR * 0.3, 0, gcx, gcy, gR);
-      sGrad.addColorStop(0, '#0e0c0a');
-      sGrad.addColorStop(1, '#050505');
+      sGrad.addColorStop(0, '#0e0c0a'); sGrad.addColorStop(1, '#050505');
       c.fillStyle = sGrad;
       c.beginPath(); c.arc(gcx, gcy, gR, 0, Math.PI * 2); c.fill();
 
-      // Ring
       c.strokeStyle = 'rgba(244, 228, 184, 0.24)';
       c.lineWidth = 1.2;
       c.beginPath(); c.arc(gcx, gcy, gR, 0, Math.PI * 2); c.stroke();
 
-      // Dots
+      // Seeds
       state.seedDots.forEach(d => {
         if (!state.visibleSeeds.has(d.id)) return;
         const p = project(d.lat, d.lon);
         if (p.z < 0) return;
         const x = gcx + gR * p.x, y = gcy - gR * p.y;
         const depth = 0.4 + 0.6 * p.z;
-        // Glow
         const gl = c.createRadialGradient(x, y, 0, x, y, 10);
         gl.addColorStop(0, `rgba(244, 228, 184, ${0.5 * depth})`);
         gl.addColorStop(1, 'rgba(244, 228, 184, 0)');
         c.fillStyle = gl;
         c.fillRect(x - 14, y - 14, 28, 28);
-        // Core
         c.fillStyle = `rgba(244, 228, 184, ${0.95 * depth})`;
         c.beginPath(); c.arc(x, y, 2.2, 0, Math.PI * 2); c.fill();
       });
 
-      // User dot bright
+      // Live users
+      if (state.connectionStatus === 'live') {
+        state.liveUsers.forEach(u => {
+          if (!u.location || u.id === state.myId) return;
+          const p = project(u.location.lat, u.location.lon);
+          if (p.z < 0) return;
+          const x = gcx + gR * p.x, y = gcy - gR * p.y;
+          const gl = c.createRadialGradient(x, y, 0, x, y, 18);
+          gl.addColorStop(0, `rgba(244, 228, 184, ${u.holding ? 0.85 : 0.65})`);
+          gl.addColorStop(1, 'rgba(244, 228, 184, 0)');
+          c.fillStyle = gl;
+          c.fillRect(x - 22, y - 22, 44, 44);
+          c.fillStyle = `rgba(244, 228, 184, ${u.holding ? 1 : 0.9})`;
+          c.beginPath(); c.arc(x, y, u.holding ? 3.5 : 2.5, 0, Math.PI * 2); c.fill();
+        });
+      }
+
+      // User dot
       if (state.userDot) {
         const p = project(state.userDot.lat, state.userDot.lon);
         if (p.z >= 0) {
@@ -1110,22 +1482,24 @@
         }
       }
 
-      // Time (hero)
+      // Time
       c.fillStyle = '#f4e4b8';
       c.font = 'italic 300 170px "Fraunces", Georgia, serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'alphabetic';
+      c.textAlign = 'center'; c.textBaseline = 'alphabetic';
       c.fillText(formatDuration(duration), W/2, 780);
 
-      // Thin line
       c.strokeStyle = 'rgba(244, 228, 184, 0.2)';
       c.lineWidth = 1;
       c.beginPath(); c.moveTo(W/2 - 60, 820); c.lineTo(W/2 + 60, 820); c.stroke();
 
-      // Others count
+      // Text
+      const others = getOtherCount();
+      const shareStr = others === 0
+        ? t('share_text_alone')
+        : t('share_text').replace('{n}', formatCount(others));
       c.fillStyle = '#ece7dd';
-      c.font = '300 34px "Geist", system-ui, sans-serif';
-      c.fillText('I held with ' + Math.max(1, others - 1).toLocaleString('en-US') + ' others.', W/2, 880);
+      c.font = '300 32px "Geist", system-ui, sans-serif';
+      c.fillText(shareStr, W/2, 880);
 
       // Date
       c.fillStyle = '#6b6459';
@@ -1133,7 +1507,7 @@
       const today = new Date().toISOString().slice(0, 10);
       c.fillText(today.replace(/-/g, '.'), W/2, 928);
 
-      // Wordmark (manual tracking)
+      // Wordmark
       c.fillStyle = '#ece7dd';
       c.font = '300 56px "Fraunces", Georgia, serif';
       const letters = 'HOLD';
@@ -1150,10 +1524,9 @@
         x += widths[i] + tracking;
       }
 
-      // Tagline
       c.fillStyle = '#6b6459';
       c.font = 'italic 300 22px "Fraunces", Georgia, serif';
-      c.fillText('the world, held together', W/2, H - 100);
+      c.fillText(t('share_tagline'), W/2, H - 100);
 
       return canvas;
     }
@@ -1171,19 +1544,119 @@
       const m = Math.floor((diff % 3600000) / 60000);
       el.countdown.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
     }
-    updateCountdown();
     setInterval(updateCountdown, 30000);
+
+    // ═══════════════════════════════════════════════════════════
+    //  SUPABASE REALTIME PRESENCE
+    // ═══════════════════════════════════════════════════════════
+    function myPresenceState() {
+      return {
+        id: state.myId,
+        location: state.userDot
+          ? { lat: state.userDot.lat, lon: state.userDot.lon }
+          : null,
+        holding: state.isHolding,
+        lang: currentLang,
+        at: Date.now(),
+      };
+    }
+
+    function broadcastPresence() {
+      if (!state.supabaseChannel || state.connectionStatus !== 'live') return;
+      try { state.supabaseChannel.track(myPresenceState()); } catch (_) {}
+    }
+
+    function ingestPresenceState(presenceState) {
+      state.liveUsers.clear();
+      for (const [key, entries] of Object.entries(presenceState)) {
+        if (entries && entries.length > 0) {
+          state.liveUsers.set(key, entries[0]);
+        }
+      }
+      recalcLiveCounter();
+    }
+
+    async function initSupabase() {
+      if (!SUPABASE_ENABLED) {
+        state.connectionStatus = 'sim';
+        updateModeIndicator();
+        initSimCounter();
+        return;
+      }
+
+      updateModeIndicator(); // "connecting…"
+
+      try {
+        const mod = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
+        const client = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          realtime: { params: { eventsPerSecond: 10 } }
+        });
+
+        const channel = client.channel(CHANNEL_NAME, {
+          config: { presence: { key: state.myId } }
+        });
+
+        channel.on('presence', { event: 'sync' }, () => {
+          ingestPresenceState(channel.presenceState());
+        });
+
+        channel.on('presence', { event: 'join' }, () => {
+          ingestPresenceState(channel.presenceState());
+        });
+
+        channel.on('presence', { event: 'leave' }, () => {
+          ingestPresenceState(channel.presenceState());
+        });
+
+        channel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            state.connectionStatus = 'live';
+            updateModeIndicator();
+            await channel.track(myPresenceState());
+            recalcLiveCounter();
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            state.connectionStatus = 'offline';
+            updateModeIndicator();
+            initSimCounter(); // fallback
+          } else if (status === 'CLOSED') {
+            state.connectionStatus = 'offline';
+            updateModeIndicator();
+          }
+        });
+
+        state.supabaseChannel = channel;
+
+        // Clean up on page unload (best-effort — presence auto-expires anyway)
+        window.addEventListener('beforeunload', () => {
+          try { channel.unsubscribe(); } catch (_) {}
+        });
+      } catch (err) {
+        console.warn('Supabase init failed, falling back to simulation:', err);
+        state.connectionStatus = 'offline';
+        updateModeIndicator();
+        initSimCounter();
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════
     //  INIT
     // ═══════════════════════════════════════════════════════════
+    currentLang = detectLanguage();
+    document.documentElement.lang = currentLang;
+    applyI18n();
+    renderLangSwitch();
+    renderSheetDynamicContent();
+    updateModeIndicator();
+
     buildSeeds();
     loadUserDot();
-    initCounter();
     resizeCanvas();
+    updateCountdown();
     state.rafId = requestAnimationFrame(renderLoop);
 
-    // Safety re-size on orientation change
+    // Kick off Supabase connection (or fall back to sim)
+    initSupabase();
+
     setTimeout(resizeCanvas, 100);
   </script>
 </body>
