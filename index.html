@@ -1815,6 +1815,14 @@
           state.liveUsers.set(key, entries[0]);
         }
       }
+      // CRITICAL: Override own entry with authoritative local state.
+      // Prevents race condition where server echo contains our own stale
+      // presence (from before the latest track() call) and rolls back
+      // the counter. Other clients see our real status via Presence sync;
+      // our own display must always reflect our true local hold state.
+      if (state.supabaseChannel) {
+        state.liveUsers.set(state.myId, myPresenceState());
+      }
       recalcLiveCounter();
     }
 
