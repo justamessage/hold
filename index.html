@@ -960,6 +960,12 @@
       rafId: null,
       lastFrameTime: 0,
 
+      // Session tracking: peers who held with us DURING our hold session.
+      // Used by the share card so we honor everyone who was part of the
+      // moment, not just those who happen to still be holding at the exact
+      // millisecond we release.
+      sessionPeers: null,
+
       // Supabase
       myId: (crypto.randomUUID && crypto.randomUUID()) || ('u-' + Math.random().toString(36).slice(2) + Date.now().toString(36)),
       liveUsers: new Map(), // key → { id, location: {lat, lon}, holding, lang }
@@ -1298,6 +1304,17 @@
       state.liveUsers.forEach(u => { if (u.holding) holding++; });
       state.counter = holding;
       updateCounter();
+
+      // If we're mid-session, add any peer currently holding to the session
+      // set. This way we remember everyone who joined at any point during
+      // our hold, not just those present at the moment we release.
+      if (state.isHolding && state.sessionPeers) {
+        state.liveUsers.forEach((u, key) => {
+          if (key !== state.myId && u && u.holding) {
+            state.sessionPeers.add(key);
+          }
+        });
+      }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1386,6 +1403,18 @@
       state.isHolding = true;
       state.activePointerId = e.pointerId;
       state.holdStart = performance.now();
+
+      // Start a fresh session. Peers who are ALREADY holding when we start
+      // get counted immediately — they are part of this moment from its
+      // beginning. Peers who join during the session will be added via
+      // recalcLiveCounter below.
+      state.sessionPeers = new Set();
+      state.liveUsers.forEach((u, key) => {
+        if (key !== state.myId && u && u.holding) {
+          state.sessionPeers.add(key);
+        }
+      });
+
       el.body.classList.add('holding');
       if (navigator.vibrate) navigator.vibrate(8);
 
@@ -1623,6 +1652,13 @@
 
     function getOtherCount() {
       if (state.connectionStatus === 'live') {
+        // For the share card shown AFTER a hold session: honor everyone who
+        // held with us at any point during the session, not just peers who
+        // happen to still be holding at the exact moment we released.
+        if (state.sessionPeers && state.sessionPeers.size > 0) {
+          return state.sessionPeers.size;
+        }
+        // Fallback (no active session / nobody joined): current snapshot
         let holding = 0;
         state.liveUsers.forEach(u => {
           if (u.holding && u.id !== state.myId) holding++;
