@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,200..900,0..100;1,9..144,200..900,0..100&family=Geist:wght@300;400;500&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -501,6 +502,8 @@
         share_tagline: 'the world, held together',
         confirm_remove: 'Remove your light from the map?',
         err_denied: 'Location permission denied. You can try again anytime.',
+        err_unavailable: 'Location unavailable. Check iOS Settings → Privacy → Location Services → Safari.',
+        err_timeout: 'Location took too long. Try again — a better signal helps.',
         err_generic: 'Could not read location. Try again?',
         err_unsupported: 'Geolocation is not available on this device.',
         mode_sim: 'v0.4 · simulated',
@@ -538,6 +541,8 @@
         share_tagline: 'die Welt, zusammengehalten',
         confirm_remove: 'Dein Licht von der Karte entfernen?',
         err_denied: 'Ortungszugriff verweigert. Du kannst es jederzeit erneut versuchen.',
+        err_unavailable: 'Standort nicht verfügbar. Prüfe iOS Einstellungen → Datenschutz → Ortungsdienste → Safari.',
+        err_timeout: 'Standortabruf hat zu lange gedauert. Versuche es mit besserem Signal nochmal.',
         err_generic: 'Ort konnte nicht gelesen werden. Erneut versuchen?',
         err_unsupported: 'Ortung ist auf diesem Gerät nicht verfügbar.',
         mode_sim: 'v0.4 · simuliert',
@@ -575,6 +580,8 @@
         share_tagline: 'el mundo, sostenido juntos',
         confirm_remove: '¿Quitar tu luz del mapa?',
         err_denied: 'Permiso de ubicación denegado. Puedes intentarlo de nuevo cuando quieras.',
+        err_unavailable: 'Ubicación no disponible. Revisa Ajustes iOS → Privacidad → Ubicación → Safari.',
+        err_timeout: 'La ubicación tardó demasiado. Inténtalo de nuevo con mejor señal.',
         err_generic: 'No se pudo leer la ubicación. ¿Intentar de nuevo?',
         err_unsupported: 'La geolocalización no está disponible en este dispositivo.',
         mode_sim: 'v0.4 · simulado',
@@ -612,6 +619,8 @@
         share_tagline: 'o mundo, segurado juntos',
         confirm_remove: 'Remover sua luz do mapa?',
         err_denied: 'Permissão de localização negada. Você pode tentar novamente quando quiser.',
+        err_unavailable: 'Localização indisponível. Verifique Ajustes iOS → Privacidade → Localização → Safari.',
+        err_timeout: 'A localização demorou demais. Tente novamente com melhor sinal.',
         err_generic: 'Não foi possível ler a localização. Tentar novamente?',
         err_unsupported: 'Geolocalização não disponível neste dispositivo.',
         mode_sim: 'v0.4 · simulado',
@@ -649,6 +658,8 @@
         share_tagline: 'le monde, tenu ensemble',
         confirm_remove: 'Retirer ta lumière de la carte ?',
         err_denied: 'Autorisation de localisation refusée. Tu peux réessayer à tout moment.',
+        err_unavailable: 'Localisation indisponible. Vérifie Réglages iOS → Confidentialité → Localisation → Safari.',
+        err_timeout: 'La localisation a pris trop de temps. Réessaie avec un meilleur signal.',
         err_generic: "Impossible de lire la localisation. Réessayer ?",
         err_unsupported: "La géolocalisation n'est pas disponible sur cet appareil.",
         mode_sim: 'v0.4 · simulé',
@@ -686,6 +697,8 @@
         share_tagline: 'il mondo, tenuto insieme',
         confirm_remove: 'Rimuovere la tua luce dalla mappa?',
         err_denied: 'Permesso di localizzazione negato. Puoi riprovare quando vuoi.',
+        err_unavailable: 'Posizione non disponibile. Controlla Impostazioni iOS → Privacy → Localizzazione → Safari.',
+        err_timeout: 'La posizione ha impiegato troppo tempo. Riprova con un segnale migliore.',
         err_generic: 'Impossibile leggere la posizione. Riprovare?',
         err_unsupported: 'Geolocalizzazione non disponibile su questo dispositivo.',
         mode_sim: 'v0.4 · simulato',
@@ -798,6 +811,7 @@
       liveUsers: new Map(), // key → { id, location: {lat, lon}, holding, lang }
       supabaseChannel: null,
       connectionStatus: SUPABASE_ENABLED ? 'connecting' : 'sim',
+      offlineReason: null,
     };
 
     const el = {
@@ -1131,7 +1145,11 @@
                 : status === 'connecting' ? 'mode_connecting'
                 : status === 'offline' ? 'mode_offline'
                 : 'mode_sim';
-      el.modeInd.textContent = t(key);
+      let label = t(key);
+      if (status === 'offline' && state.offlineReason) {
+        label += ' · ' + state.offlineReason;
+      }
+      el.modeInd.textContent = label;
       el.modeInd.classList.toggle('live', status === 'live');
     }
 
@@ -1591,11 +1609,20 @@
         return;
       }
 
+      console.log('[HOLD] init: URL =', SUPABASE_URL, '| key prefix =', SUPABASE_ANON_KEY.slice(0, 12) + '...');
       updateModeIndicator(); // "connecting…"
 
+      // UMD script tag loaded globally; check for availability
+      if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+        console.error('[HOLD] Supabase SDK did not load. Check network/CDN.');
+        state.connectionStatus = 'offline';
+        state.offlineReason = 'sdk';
+        updateModeIndicator();
+        return;
+      }
+
       try {
-        const mod = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
-        const client = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           realtime: { params: { eventsPerSecond: 10 } }
         });
 
@@ -1606,42 +1633,46 @@
         channel.on('presence', { event: 'sync' }, () => {
           ingestPresenceState(channel.presenceState());
         });
-
         channel.on('presence', { event: 'join' }, () => {
           ingestPresenceState(channel.presenceState());
         });
-
         channel.on('presence', { event: 'leave' }, () => {
           ingestPresenceState(channel.presenceState());
         });
 
-        channel.subscribe(async (status) => {
+        channel.subscribe(async (status, err) => {
+          console.log('[HOLD] channel status:', status, err || '');
           if (status === 'SUBSCRIBED') {
             state.connectionStatus = 'live';
+            state.offlineReason = null;
             updateModeIndicator();
             await channel.track(myPresenceState());
             recalcLiveCounter();
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          } else if (status === 'CHANNEL_ERROR') {
             state.connectionStatus = 'offline';
+            state.offlineReason = 'channel';
             updateModeIndicator();
-            // Keep last known live counter value; do NOT fall back to simulation.
+          } else if (status === 'TIMED_OUT') {
+            state.connectionStatus = 'offline';
+            state.offlineReason = 'timeout';
+            updateModeIndicator();
           } else if (status === 'CLOSED') {
             state.connectionStatus = 'offline';
+            state.offlineReason = 'closed';
             updateModeIndicator();
           }
         });
 
         state.supabaseChannel = channel;
 
-        // Clean up on page unload (best-effort — presence auto-expires anyway)
         window.addEventListener('beforeunload', () => {
           try { channel.unsubscribe(); } catch (_) {}
         });
       } catch (err) {
-        console.warn('Supabase init failed:', err);
+        console.error('[HOLD] Supabase init threw:', err);
         state.connectionStatus = 'offline';
+        state.offlineReason = 'init';
         updateModeIndicator();
-        // Counter stays at 0; user can reload to retry.
       }
     }
 
