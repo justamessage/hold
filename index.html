@@ -295,6 +295,63 @@
   }
   .sheet-terms .k { color: var(--light); }
 
+  /* Precision toggle */
+  .precise-block {
+    padding: 14px 16px;
+    border: 1px solid rgba(244, 228, 184, 0.08);
+    border-radius: 10px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .precise-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .precise-label {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+  }
+  .precise-switch {
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: rgba(244, 228, 184, 0.12);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.25s ease;
+    border: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .precise-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: transform 0.25s ease, background 0.25s ease;
+  }
+  .precise-switch.on {
+    background: rgba(244, 228, 184, 0.35);
+  }
+  .precise-switch.on::after {
+    transform: translateX(18px);
+    background: var(--light);
+  }
+  .precise-notice {
+    font-family: 'Geist Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
   .sheet-actions { display: flex; gap: 10px; }
 
   .btn {
@@ -442,6 +499,13 @@
       <div class="sheet-title" data-i18n="sheet_title">Show the world where you're holding from.</div>
       <div class="sheet-body" id="sheetBody"></div>
       <div class="sheet-terms" id="sheetTerms"></div>
+      <div class="precise-block">
+        <div class="precise-row">
+          <span class="precise-label" id="preciseLabel">Show my city on the share card</span>
+          <button class="precise-switch" id="preciseSwitch" aria-label="Toggle precise location" role="switch"></button>
+        </div>
+        <div class="precise-notice" id="preciseNotice"></div>
+      </div>
       <div class="sheet-actions">
         <button class="btn" id="sheetSkip" data-i18n="btn_skip">Skip</button>
         <button class="btn primary" id="sheetAllow" data-i18n="btn_allow">Share my region</button>
@@ -515,6 +579,9 @@
         share_text_alone: 'I held the world.',
         share_tagline: 'the world, held together',
         held_from: 'Held from {city} · {country}',
+        precise_toggle: 'Show my city on the share card',
+        precise_notice: 'Precise location stays in your browser. Only the city name is shown. City lookup uses BigDataCloud (Australia).',
+        precise_off: 'City display off · card shows only time and count',
         confirm_remove: 'Remove your light from the map?',
         err_denied: 'Location permission denied. You can try again anytime.',
         err_unavailable: 'Location unavailable. Check iOS Settings → Privacy → Location Services → Safari.',
@@ -555,6 +622,9 @@
         share_text_alone: 'Ich habe die Welt gehalten.',
         share_tagline: 'die Welt, zusammengehalten',
         held_from: 'Gehalten aus {city} · {country}',
+        precise_toggle: 'Meine Stadt auf der Share-Karte zeigen',
+        precise_notice: 'Präzise Koordinaten bleiben in deinem Browser. Nur der Stadtname wird angezeigt. Für die Ortszuordnung wird BigDataCloud (Australien) genutzt.',
+        precise_off: 'Stadtanzeige aus · Karte zeigt nur Zeit und Anzahl',
         confirm_remove: 'Dein Licht von der Karte entfernen?',
         err_denied: 'Ortungszugriff verweigert. Du kannst es jederzeit erneut versuchen.',
         err_unavailable: 'Standort nicht verfügbar. Prüfe iOS Einstellungen → Datenschutz → Ortungsdienste → Safari.',
@@ -595,6 +665,9 @@
         share_text_alone: 'Sostuve el mundo.',
         share_tagline: 'el mundo, sostenido juntos',
         held_from: 'Sostenido desde {city} · {country}',
+        precise_toggle: 'Mostrar mi ciudad en la tarjeta',
+        precise_notice: 'Las coordenadas precisas permanecen en tu navegador. Solo se muestra el nombre de la ciudad. La búsqueda usa BigDataCloud (Australia).',
+        precise_off: 'Ciudad oculta · la tarjeta muestra solo tiempo y número',
         confirm_remove: '¿Quitar tu luz del mapa?',
         err_denied: 'Permiso de ubicación denegado. Puedes intentarlo de nuevo cuando quieras.',
         err_unavailable: 'Ubicación no disponible. Revisa Ajustes iOS → Privacidad → Ubicación → Safari.',
@@ -635,6 +708,9 @@
         share_text_alone: 'Segurei o mundo.',
         share_tagline: 'o mundo, segurado juntos',
         held_from: 'Segurado de {city} · {country}',
+        precise_toggle: 'Mostrar minha cidade no cartão',
+        precise_notice: 'Coordenadas precisas ficam no seu navegador. Apenas o nome da cidade é mostrado. A busca usa BigDataCloud (Austrália).',
+        precise_off: 'Cidade oculta · o cartão mostra apenas tempo e contagem',
         confirm_remove: 'Remover sua luz do mapa?',
         err_denied: 'Permissão de localização negada. Você pode tentar novamente quando quiser.',
         err_unavailable: 'Localização indisponível. Verifique Ajustes iOS → Privacidade → Localização → Safari.',
@@ -675,6 +751,9 @@
         share_text_alone: "J'ai tenu le monde.",
         share_tagline: 'le monde, tenu ensemble',
         held_from: 'Tenu depuis {city} · {country}',
+        precise_toggle: 'Afficher ma ville sur la carte de partage',
+        precise_notice: 'Les coordonnées précises restent dans ton navigateur. Seul le nom de la ville est affiché. La recherche utilise BigDataCloud (Australie).',
+        precise_off: 'Ville masquée · la carte affiche seulement le temps et le nombre',
         confirm_remove: 'Retirer ta lumière de la carte ?',
         err_denied: 'Autorisation de localisation refusée. Tu peux réessayer à tout moment.',
         err_unavailable: 'Localisation indisponible. Vérifie Réglages iOS → Confidentialité → Localisation → Safari.',
@@ -715,6 +794,9 @@
         share_text_alone: 'Ho tenuto il mondo.',
         share_tagline: 'il mondo, tenuto insieme',
         held_from: 'Tenuto da {city} · {country}',
+        precise_toggle: 'Mostra la mia città sul biglietto',
+        precise_notice: 'Le coordinate precise restano nel tuo browser. Viene mostrato solo il nome della città. La ricerca usa BigDataCloud (Australia).',
+        precise_off: 'Città nascosta · il biglietto mostra solo tempo e numero',
         confirm_remove: 'Rimuovere la tua luce dalla mappa?',
         err_denied: 'Permesso di localizzazione negato. Puoi riprovare quando vuoi.',
         err_unavailable: 'Posizione non disponibile. Controlla Impostazioni iOS → Privacy → Localizzazione → Safari.',
@@ -762,9 +844,10 @@
       // Broadcast language so dots show proper locale in future features
       broadcastPresence();
       // Re-geocode user location in new language (for country name translation)
-      if (state.userDot && state.userDot.geocodedLang !== currentLang) {
+      if (state.userDot && state.userDot.showPrecise && state.userDot.geocodedLang !== currentLang) {
         geocodeUserDot();
       }
+      updatePreciseSwitch();
     }
 
     function applyI18n() {
@@ -805,6 +888,7 @@
       terms.innerHTML = rows.map(([k, v]) =>
         `<span class="k">${t(k)}</span> · ${t(v)}`
       ).join('<br />');
+      updatePreciseSwitch();
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -851,6 +935,9 @@
       sheetBack:   document.getElementById('sheetBackdrop'),
       sheetSkip:   document.getElementById('sheetSkip'),
       sheetAllow:  document.getElementById('sheetAllow'),
+      preciseSwitch: document.getElementById('preciseSwitch'),
+      preciseLabel: document.getElementById('preciseLabel'),
+      preciseNotice: document.getElementById('preciseNotice'),
       cardOverlay: document.getElementById('cardOverlay'),
       cardTime:    document.getElementById('cardTime'),
       cardText:    document.getElementById('cardText'),
@@ -1147,16 +1234,13 @@
     }
     setInterval(simCounterTick, 850);
 
-    // Live mode: count of users currently holding (including self)
     function recalcLiveCounter() {
       if (state.connectionStatus !== 'live') return;
+      // Single source of truth: count every holder in presence state.
+      // Our own hold is included automatically because we track() ourselves
+      // into the same channel immediately when startHold() runs.
       let holding = 0;
       state.liveUsers.forEach(u => { if (u.holding) holding++; });
-      // Ensure self is counted even before presence round-trip
-      if (state.isHolding) {
-        const selfInMap = Array.from(state.liveUsers.values()).some(u => u.id === state.myId && u.holding);
-        if (!selfInMap) holding += 1;
-      }
       state.counter = holding;
       updateCounter();
     }
@@ -1193,7 +1277,7 @@
 
       if (state.connectionStatus === 'live') {
         broadcastPresence();
-        recalcLiveCounter();
+        // Counter updates happen via presence sync — no local increment.
       } else {
         state.targetCounter += 1;
       }
@@ -1219,7 +1303,7 @@
 
       if (state.connectionStatus === 'live') {
         broadcastPresence();
-        recalcLiveCounter();
+        // Counter updates happen via presence sync — no local decrement.
       } else {
         state.targetCounter = Math.max(1000, state.targetCounter - 1);
       }
@@ -1250,8 +1334,11 @@
           if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
             state.userDot = parsed;
             updateJoinButton();
-            // Re-geocode if not cached or language changed
-            if (!state.userDot.city || state.userDot.geocodedLang !== currentLang) {
+            updatePreciseSwitch();
+            // Re-geocode only if user has opted into precise display
+            // and either no cached city exists or language changed.
+            if (state.userDot.showPrecise &&
+                (!state.userDot.city || state.userDot.geocodedLang !== currentLang)) {
               geocodeUserDot();
             }
           }
@@ -1283,17 +1370,23 @@
     function openSheet() { el.sheetBack.classList.add('visible'); }
     function closeSheet() { el.sheetBack.classList.remove('visible'); }
 
-    function fuzzyCoord(c) { return Math.round(c * 2) / 2; }
+    // ~10 km fuzzy grid (0.1°) — precise enough to stay in the right city,
+    // still far from GPS precision. No street, no address, no exact position ever.
+    function fuzzyCoord(c) { return Math.round(c * 10) / 10; }
 
     // Reverse geocoding via BigDataCloud (free, no API key).
-    // We only send the already-fuzzed coordinates — never precise GPS.
+    // Uses PRECISE coordinates (kept only in this browser) to return an
+    // accurate city name for the user's own share card.
+    // Never runs unless the user explicitly opted in via the precision toggle.
     async function geocodeUserDot() {
       if (!state.userDot) return;
-      const { latDeg, lonDeg } = state.userDot;
-      if (typeof latDeg !== 'number' || typeof lonDeg !== 'number') return;
+      if (!state.userDot.showPrecise) return;
+      const lat = state.userDot.preciseLat;
+      const lon = state.userDot.preciseLon;
+      if (typeof lat !== 'number' || typeof lon !== 'number') return;
 
       const lang = (currentLang || 'en').split('-')[0];
-      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latDeg}&longitude=${lonDeg}&localityLanguage=${lang}`;
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=${lang}`;
       try {
         const resp = await fetch(url);
         if (!resp.ok) throw new Error('geocode HTTP ' + resp.status);
@@ -1318,20 +1411,31 @@
       }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const lat = fuzzyCoord(pos.coords.latitude);
-          const lon = fuzzyCoord(pos.coords.longitude);
+          const preciseLat = pos.coords.latitude;
+          const preciseLon = pos.coords.longitude;
+          const lat = fuzzyCoord(preciseLat);
+          const lon = fuzzyCoord(preciseLon);
+          // Preserve existing showPrecise preference if already set
+          const prevShowPrecise = (state.userDot && state.userDot.showPrecise) || false;
           state.userDot = {
+            // Fuzzed coords — what everyone else sees
             lat: lat * Math.PI / 180,
             lon: lon * Math.PI / 180,
             latDeg: lat, lonDeg: lon,
+            // Precise coords — stay only in this browser for accurate city lookup
+            preciseLat: preciseLat,
+            preciseLon: preciseLon,
+            // User preference — geocoding only runs if true
+            showPrecise: prevShowPrecise,
           };
           saveUserDot(state.userDot);
           updateJoinButton();
+          updatePreciseSwitch();
           closeSheet();
           if (navigator.vibrate) navigator.vibrate([8, 30, 16]);
           state.rotation = -state.userDot.lon + 0.1;
           broadcastPresence();
-          geocodeUserDot();
+          if (state.userDot.showPrecise) geocodeUserDot();
         },
         (err) => {
           closeSheet();
@@ -1358,6 +1462,39 @@
     el.sheetAllow.addEventListener('click', requestLocation);
     el.sheetBack.addEventListener('click', (e) => {
       if (e.target === el.sheetBack) closeSheet();
+    });
+
+    function updatePreciseSwitch() {
+      if (!el.preciseSwitch) return; // called before DOM refs ready
+      const on = !!(state.userDot && state.userDot.showPrecise);
+      el.preciseSwitch.classList.toggle('on', on);
+      el.preciseSwitch.setAttribute('aria-checked', on ? 'true' : 'false');
+      el.preciseLabel.textContent = t('precise_toggle');
+      el.preciseNotice.textContent = on ? t('precise_notice') : t('precise_off');
+    }
+
+    el.preciseSwitch.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!state.userDot) {
+        // User hasn't opted into the map yet — toggle stores preference,
+        // to be applied on the next location grant.
+        state.userDot = { showPrecise: true };
+        // But without lat/lon, nothing to save. Tuck preference into localStorage directly.
+        try { localStorage.setItem('hold.showPrecise', '1'); } catch (_) {}
+        updatePreciseSwitch();
+        return;
+      }
+      const wasOn = !!state.userDot.showPrecise;
+      state.userDot.showPrecise = !wasOn;
+      if (!state.userDot.showPrecise) {
+        // User opted out — clear any cached city/country so card falls back cleanly
+        delete state.userDot.city;
+        delete state.userDot.country;
+        delete state.userDot.geocodedLang;
+      }
+      saveUserDot(state.userDot);
+      updatePreciseSwitch();
+      if (state.userDot.showPrecise) geocodeUserDot();
     });
 
     // ═══════════════════════════════════════════════════════════
