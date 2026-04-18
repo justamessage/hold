@@ -1885,22 +1885,18 @@
     function broadcastPresence() {
       if (!state.supabaseChannel || state.connectionStatus !== 'live') return;
       const ps = myPresenceState();
-      // Mirror own presence locally so the counter is accurate immediately,
-      // without waiting for Supabase's round-trip. The incoming sync event
-      // will overwrite this entry idempotently shortly after.
+      // Mirror own presence locally so the counter is accurate immediately.
       state.liveUsers.set(state.myId, ps);
       try {
         state.supabaseChannel.track(ps);
         state.trackCount++;
-        // IMPORTANT: Also send an explicit broadcast to wake up other clients.
-        // Supabase's presence 'sync' event doesn't fire reliably on other
-        // clients when track() only changes the value of an existing entry
-        // (e.g. holding: true → false). A broadcast forces every peer to
-        // re-read presenceState() and see our new hold status.
+        // The broadcast carries the FULL new state as its payload.
+        // Peers update directly from this payload rather than waiting for
+        // (and potentially reading a stale version of) presenceState().
         state.supabaseChannel.send({
           type: 'broadcast',
           event: 'state_changed',
-          payload: { from: state.myId, at: Date.now() }
+          payload: ps
         });
       } catch (err) {
         console.warn('[HOLD] track failed:', err);
@@ -1910,17 +1906,31 @@
     }
 
     function ingestPresenceState(presenceState) {
-      state.liveUsers.clear();
+      // Parse incoming presence into a map for easier comparison
+      const incoming = new Map();
       for (const [key, entries] of Object.entries(presenceState)) {
         if (entries && entries.length > 0) {
-          state.liveUsers.set(key, entries[0]);
+          incoming.set(key, entries[0]);
         }
       }
-      // CRITICAL: Override own entry with authoritative local state.
-      // Prevents race condition where server echo contains our own stale
-      // presence (from before the latest track() call) and rolls back
-      // the counter. Other clients see our real status via Presence sync;
-      // our own display must always reflect our true local hold state.
+      // Merge: for each user in presence, only apply if it's not older than
+      // what we already have (broadcasts may have delivered newer state).
+      for (const [key, presenceEntry] of incoming) {
+        if (key === state.myId) continue; // own entry handled below
+        const existing = state.liveUsers.get(key);
+        if (existing && existing.at && presenceEntry.at && presenceEntry.at < existing.at) {
+          continue; // local broadcast-derived state is newer, keep it
+        }
+        state.liveUsers.set(key, presenceEntry);
+      }
+      // Remove users who are no longer in the presence state (they disconnected)
+      for (const key of Array.from(state.liveUsers.keys())) {
+        if (key === state.myId) continue;
+        if (!incoming.has(key)) {
+          state.liveUsers.delete(key);
+        }
+      }
+      // Own entry always authoritative from local state
       if (state.supabaseChannel) {
         state.liveUsers.set(state.myId, myPresenceState());
       }
@@ -1971,15 +1981,18 @@
           ingestPresenceState(channel.presenceState());
           logDebugEvent('leave:' + (key || '').slice(0, 4));
         });
-        // Explicit broadcast channel — used as a "wake-up" trigger for peers
-        // to re-read presenceState() whenever any client changes its hold
-        // status. Supabase's presence sync event alone is not sufficient
-        // for value changes within an existing presence entry.
+        // Explicit broadcast channel — carries authoritative live state.
+        // Supabase's presence sync event doesn't fire reliably when only
+        // the value of an existing presence entry changes, and even when
+        // it does, presenceState() may still hold a stale snapshot. The
+        // broadcast payload contains the peer's new state directly, so
+        // we apply it without waiting for presence.
         channel.on('broadcast', { event: 'state_changed' }, ({ payload }) => {
-          if (!payload || payload.from === state.myId) return;
-          console.log('[HOLD] broadcast:state_changed from', (payload.from || '').slice(0, 4));
-          ingestPresenceState(channel.presenceState());
-          logDebugEvent('bcast:' + (payload.from || '').slice(0, 4));
+          if (!payload || !payload.id || payload.id === state.myId) return;
+          console.log('[HOLD] broadcast:state_changed from', payload.id.slice(0, 4), 'holding=' + payload.holding);
+          state.liveUsers.set(payload.id, payload);
+          recalcLiveCounter();
+          logDebugEvent('bcast:' + payload.id.slice(0, 4) + (payload.holding ? '✋' : ''));
         });
 
         channel.subscribe(async (status, err) => {
@@ -2013,18 +2026,17 @@
 
         // When a tab/window comes back to foreground, force a re-sync.
         // Safari aggressively throttles background tabs' WebSocket traffic,
-        // so presence state may be stale after returning. Ping peers to
-        // confirm everyone's current hold state.
+        // so presence state may be stale after returning. Ping peers with
+        // our current state and re-read any we may have missed.
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && state.supabaseChannel && state.connectionStatus === 'live') {
             console.log('[HOLD] tab visible — re-syncing');
             ingestPresenceState(channel.presenceState());
-            // Nudge peers to re-sync us too
             try {
               channel.send({
                 type: 'broadcast',
                 event: 'state_changed',
-                payload: { from: state.myId, at: Date.now() }
+                payload: myPresenceState()
               });
             } catch (_) {}
           }
