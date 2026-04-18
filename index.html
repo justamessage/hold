@@ -462,9 +462,36 @@
     .tagline { font-size: 14px; }
     .countdown { font-size: 10px; }
   }
+
+  /* ─── DEBUG PANEL ─── */
+  .debug-panel {
+    position: fixed;
+    top: max(env(safe-area-inset-top), 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: rgba(10, 9, 8, 0.92);
+    border: 1px solid rgba(244, 228, 184, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    line-height: 1.5;
+    max-width: 92vw;
+    display: none;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .debug-panel.visible { display: block; }
+  .debug-panel .dk { color: var(--light); }
+  .debug-panel .dv { color: var(--text); }
+  .debug-panel .row { display: flex; gap: 8px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
+  <div class="debug-panel" id="debugPanel"></div>
   <div class="status">
     <div class="status-left">
       <span class="counter-label" data-i18n="counter_label">Now holding</span>
@@ -920,6 +947,13 @@
       supabaseChannel: null,
       connectionStatus: SUPABASE_ENABLED ? 'connecting' : 'sim',
       offlineReason: null,
+
+      // Debug
+      debug: new URLSearchParams(location.search).has('debug'),
+      lastEvent: '—',
+      lastEventAt: 0,
+      trackCount: 0,
+      syncCount: 0,
     };
 
     const el = {
@@ -1260,7 +1294,58 @@
       }
       el.modeInd.textContent = label;
       el.modeInd.classList.toggle('live', status === 'live');
+      updateDebugPanel();
     }
+
+    function logDebugEvent(name) {
+      state.lastEvent = name;
+      state.lastEventAt = Date.now();
+      console.log('[HOLD:debug]', name, '| users=' + state.liveUsers.size,
+        '| holding=' + countHolders(),
+        '| status=' + state.connectionStatus);
+      updateDebugPanel();
+    }
+
+    function countHolders() {
+      let n = 0;
+      state.liveUsers.forEach(u => { if (u && u.holding) n++; });
+      return n;
+    }
+
+    function updateDebugPanel() {
+      const panel = document.getElementById('debugPanel');
+      if (!panel) return;
+      if (!state.debug) {
+        panel.classList.remove('visible');
+        return;
+      }
+      panel.classList.add('visible');
+      const myIdShort = state.myId.slice(0, 6);
+      const secondsAgo = state.lastEventAt
+        ? Math.floor((Date.now() - state.lastEventAt) / 1000) + 's ago'
+        : '—';
+      const users = Array.from(state.liveUsers.values())
+        .map(u => (u.id === state.myId ? '•me' : u.id.slice(0, 4)) + (u.holding ? '✋' : ''))
+        .join(' ');
+      panel.innerHTML = `
+        <div class="row">
+          <span><span class="dk">status</span> <span class="dv">${state.connectionStatus}${state.offlineReason ? '·' + state.offlineReason : ''}</span></span>
+          <span><span class="dk">me</span> <span class="dv">${myIdShort}</span></span>
+          <span><span class="dk">held</span> <span class="dv">${state.isHolding ? 'Y' : 'n'}</span></span>
+        </div>
+        <div class="row">
+          <span><span class="dk">users</span> <span class="dv">${state.liveUsers.size}</span></span>
+          <span><span class="dk">holding</span> <span class="dv">${countHolders()}</span></span>
+          <span><span class="dk">sync</span> <span class="dv">${state.syncCount}</span></span>
+          <span><span class="dk">track</span> <span class="dv">${state.trackCount}</span></span>
+        </div>
+        <div class="row"><span><span class="dk">last</span> <span class="dv">${state.lastEvent} · ${secondsAgo}</span></span></div>
+        <div class="row"><span class="dv" style="font-size:9px;opacity:0.7">${users || 'no users'}</span></div>
+      `;
+    }
+
+    // Refresh debug panel's "time ago" counter
+    setInterval(() => { if (state.debug) updateDebugPanel(); }, 1000);
 
     // ═══════════════════════════════════════════════════════════
     //  HOLD MECHANIC
@@ -1804,8 +1889,14 @@
       // without waiting for Supabase's round-trip. The incoming sync event
       // will overwrite this entry idempotently shortly after.
       state.liveUsers.set(state.myId, ps);
-      try { state.supabaseChannel.track(ps); } catch (_) {}
+      try {
+        state.supabaseChannel.track(ps);
+        state.trackCount++;
+      } catch (err) {
+        console.warn('[HOLD] track failed:', err);
+      }
       recalcLiveCounter();
+      logDebugEvent('track:' + (ps.holding ? 'hold' : 'release'));
     }
 
     function ingestPresenceState(presenceState) {
@@ -1823,7 +1914,9 @@
       if (state.supabaseChannel) {
         state.liveUsers.set(state.myId, myPresenceState());
       }
+      state.syncCount++;
       recalcLiveCounter();
+      logDebugEvent('sync');
     }
 
     async function initSupabase() {
@@ -1858,11 +1951,15 @@
         channel.on('presence', { event: 'sync' }, () => {
           ingestPresenceState(channel.presenceState());
         });
-        channel.on('presence', { event: 'join' }, () => {
+        channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          console.log('[HOLD] presence:join', key, newPresences);
           ingestPresenceState(channel.presenceState());
+          logDebugEvent('join:' + (key || '').slice(0, 4));
         });
-        channel.on('presence', { event: 'leave' }, () => {
+        channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          console.log('[HOLD] presence:leave', key, leftPresences);
           ingestPresenceState(channel.presenceState());
+          logDebugEvent('leave:' + (key || '').slice(0, 4));
         });
 
         channel.subscribe(async (status, err) => {
@@ -1915,6 +2012,7 @@
     loadUserDot();
     resizeCanvas();
     updateCountdown();
+    updateDebugPanel();
     state.rafId = requestAnimationFrame(renderLoop);
 
     // Kick off Supabase connection (or fall back to sim)
