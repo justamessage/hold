@@ -216,7 +216,22 @@
   .lang-sep { color: rgba(58, 53, 48, 0.5); padding: 6px 0; }
 
   body.holding .bottom,
-  body.holding .status { opacity: 0.12; }
+  body.holding .status-right { opacity: 0.12; }
+
+  /* During hold: the counter is the emotional core — you are not alone.
+     Keep it fully visible and add a subtle glow to echo your participation. */
+  body.holding .status-left {
+    opacity: 1;
+  }
+  body.holding .counter {
+    text-shadow: 0 0 16px rgba(244, 228, 184, 0.55);
+    transition: text-shadow 0.4s ease;
+  }
+  body.holding .counter-label {
+    color: var(--light);
+    opacity: 0.7;
+    transition: color 0.4s ease, opacity 0.4s ease;
+  }
 
   /* ─── CONSENT SHEET ─── */
   .sheet-backdrop {
