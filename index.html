@@ -2020,6 +2020,42 @@
 
         state.supabaseChannel = channel;
 
+        // Heartbeat: periodically re-broadcast our state so peers stay in
+        // sync even if a single broadcast was lost (network hiccup, Safari
+        // throttling, etc.). Convergence guaranteed within ~5s.
+        setInterval(() => {
+          if (state.connectionStatus !== 'live' || !state.supabaseChannel) return;
+          try {
+            state.supabaseChannel.send({
+              type: 'broadcast',
+              event: 'state_changed',
+              payload: myPresenceState()
+            });
+          } catch (_) {}
+        }, 5000);
+
+        // Stale-peer cleanup: if we haven't heard from a peer in 20s,
+        // assume they disconnected even if we missed the leave event.
+        // With the 5s heartbeat, 20s of silence is definitively gone.
+        setInterval(() => {
+          if (state.connectionStatus !== 'live') return;
+          const now = Date.now();
+          const staleThreshold = 20000;
+          let changed = false;
+          for (const [key, entry] of state.liveUsers) {
+            if (key === state.myId) continue;
+            if (entry.at && (now - entry.at) > staleThreshold) {
+              console.log('[HOLD] stale peer removed:', key.slice(0, 4));
+              state.liveUsers.delete(key);
+              changed = true;
+            }
+          }
+          if (changed) {
+            recalcLiveCounter();
+            logDebugEvent('cleanup');
+          }
+        }, 5000);
+
         window.addEventListener('beforeunload', () => {
           try { channel.unsubscribe(); } catch (_) {}
         });
