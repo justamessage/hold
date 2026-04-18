@@ -383,6 +383,17 @@
     position: relative; z-index: 2;
   }
 
+  .card-location {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-variation-settings: "opsz" 24;
+    font-size: 12px; color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 10px;
+    position: relative; z-index: 2;
+    min-height: 14px;
+  }
+  .card-location:empty { display: none; }
+
   .card-actions { display: flex; gap: 10px; margin-top: 24px; }
   .card-actions .btn {
     flex: 0 1 auto; font-size: 10px; padding: 14px 20px;
@@ -417,7 +428,7 @@
 
   <div class="bottom">
     <div class="wordmark">HOLD</div>
-    <div class="tagline" data-i18n="tagline">Press the world. Hold the world.</div>
+    <div class="tagline" data-i18n="tagline">Touch the world. Hold the world.</div>
     <div class="countdown">
       <span data-i18n="countdown_prefix">THE 11:11 ·</span>
       <span class="next" id="next1111" data-i18n="countdown_calc">calculating…</span>
@@ -443,6 +454,7 @@
       <canvas id="cardGlobe"></canvas>
       <div class="card-time" id="cardTime">0s</div>
       <div class="card-text" id="cardText"></div>
+      <div class="card-location" id="cardLocation"></div>
       <div class="card-wordmark">HOLD</div>
     </div>
     <div class="card-actions">
@@ -479,7 +491,7 @@
         counter_label: 'Now holding',
         join_link: 'Join the map →',
         join_link_on: 'On the map · remove',
-        tagline: 'Press the world. Hold the world.',
+        tagline: 'Touch the world. Hold the world.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculating…',
         sheet_label: 'Join the map',
@@ -502,6 +514,7 @@
         share_text: 'I held with {n} others.',
         share_text_alone: 'I held the world.',
         share_tagline: 'the world, held together',
+        held_from: 'Held from {city} · {country}',
         confirm_remove: 'Remove your light from the map?',
         err_denied: 'Location permission denied. You can try again anytime.',
         err_unavailable: 'Location unavailable. Check iOS Settings → Privacy → Location Services → Safari.',
@@ -541,6 +554,7 @@
         share_text: 'Ich habe mit {n} anderen gehalten.',
         share_text_alone: 'Ich habe die Welt gehalten.',
         share_tagline: 'die Welt, zusammengehalten',
+        held_from: 'Gehalten aus {city} · {country}',
         confirm_remove: 'Dein Licht von der Karte entfernen?',
         err_denied: 'Ortungszugriff verweigert. Du kannst es jederzeit erneut versuchen.',
         err_unavailable: 'Standort nicht verfügbar. Prüfe iOS Einstellungen → Datenschutz → Ortungsdienste → Safari.',
@@ -557,7 +571,7 @@
         counter_label: 'Sosteniendo ahora',
         join_link: 'Únete al mapa →',
         join_link_on: 'En el mapa · quitar',
-        tagline: 'Presiona el mundo. Sostén el mundo.',
+        tagline: 'Toca el mundo. Sostén el mundo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculando…',
         sheet_label: 'Únete al mapa',
@@ -580,6 +594,7 @@
         share_text: 'Sostuve con {n} personas más.',
         share_text_alone: 'Sostuve el mundo.',
         share_tagline: 'el mundo, sostenido juntos',
+        held_from: 'Sostenido desde {city} · {country}',
         confirm_remove: '¿Quitar tu luz del mapa?',
         err_denied: 'Permiso de ubicación denegado. Puedes intentarlo de nuevo cuando quieras.',
         err_unavailable: 'Ubicación no disponible. Revisa Ajustes iOS → Privacidad → Ubicación → Safari.',
@@ -596,7 +611,7 @@
         counter_label: 'Segurando agora',
         join_link: 'Entre no mapa →',
         join_link_on: 'No mapa · remover',
-        tagline: 'Pressione o mundo. Segure o mundo.',
+        tagline: 'Toque o mundo. Segure o mundo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculando…',
         sheet_label: 'Entre no mapa',
@@ -619,6 +634,7 @@
         share_text: 'Segurei com {n} outras pessoas.',
         share_text_alone: 'Segurei o mundo.',
         share_tagline: 'o mundo, segurado juntos',
+        held_from: 'Segurado de {city} · {country}',
         confirm_remove: 'Remover sua luz do mapa?',
         err_denied: 'Permissão de localização negada. Você pode tentar novamente quando quiser.',
         err_unavailable: 'Localização indisponível. Verifique Ajustes iOS → Privacidade → Localização → Safari.',
@@ -658,6 +674,7 @@
         share_text: "J'ai tenu avec {n} autres.",
         share_text_alone: "J'ai tenu le monde.",
         share_tagline: 'le monde, tenu ensemble',
+        held_from: 'Tenu depuis {city} · {country}',
         confirm_remove: 'Retirer ta lumière de la carte ?',
         err_denied: 'Autorisation de localisation refusée. Tu peux réessayer à tout moment.',
         err_unavailable: 'Localisation indisponible. Vérifie Réglages iOS → Confidentialité → Localisation → Safari.',
@@ -674,7 +691,7 @@
         counter_label: 'Stanno tenendo',
         join_link: 'Unisciti alla mappa →',
         join_link_on: 'Sulla mappa · rimuovi',
-        tagline: 'Premi il mondo. Tieni il mondo.',
+        tagline: 'Tocca il mondo. Tieni il mondo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'in calcolo…',
         sheet_label: 'Unisciti alla mappa',
@@ -697,6 +714,7 @@
         share_text: 'Ho tenuto con {n} altre persone.',
         share_text_alone: 'Ho tenuto il mondo.',
         share_tagline: 'il mondo, tenuto insieme',
+        held_from: 'Tenuto da {city} · {country}',
         confirm_remove: 'Rimuovere la tua luce dalla mappa?',
         err_denied: 'Permesso di localizzazione negato. Puoi riprovare quando vuoi.',
         err_unavailable: 'Posizione non disponibile. Controlla Impostazioni iOS → Privacy → Localizzazione → Safari.',
@@ -743,6 +761,10 @@
       updateModeIndicator();
       // Broadcast language so dots show proper locale in future features
       broadcastPresence();
+      // Re-geocode user location in new language (for country name translation)
+      if (state.userDot && state.userDot.geocodedLang !== currentLang) {
+        geocodeUserDot();
+      }
     }
 
     function applyI18n() {
@@ -832,6 +854,7 @@
       cardOverlay: document.getElementById('cardOverlay'),
       cardTime:    document.getElementById('cardTime'),
       cardText:    document.getElementById('cardText'),
+      cardLocation: document.getElementById('cardLocation'),
       cardGlobe:   document.getElementById('cardGlobe'),
       btnAgain:    document.getElementById('btnAgain'),
       btnShare:    document.getElementById('btnShare'),
@@ -1227,6 +1250,10 @@
           if (typeof parsed.lat === 'number' && typeof parsed.lon === 'number') {
             state.userDot = parsed;
             updateJoinButton();
+            // Re-geocode if not cached or language changed
+            if (!state.userDot.city || state.userDot.geocodedLang !== currentLang) {
+              geocodeUserDot();
+            }
           }
         }
       } catch (_) {}
@@ -1258,6 +1285,32 @@
 
     function fuzzyCoord(c) { return Math.round(c * 2) / 2; }
 
+    // Reverse geocoding via BigDataCloud (free, no API key).
+    // We only send the already-fuzzed coordinates — never precise GPS.
+    async function geocodeUserDot() {
+      if (!state.userDot) return;
+      const { latDeg, lonDeg } = state.userDot;
+      if (typeof latDeg !== 'number' || typeof lonDeg !== 'number') return;
+
+      const lang = (currentLang || 'en').split('-')[0];
+      const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latDeg}&longitude=${lonDeg}&localityLanguage=${lang}`;
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('geocode HTTP ' + resp.status);
+        const data = await resp.json();
+        const city = data.city || data.locality || data.principalSubdivision || '';
+        const country = data.countryName || '';
+        if (!city && !country) return;
+        state.userDot.city = city;
+        state.userDot.country = country;
+        state.userDot.geocodedLang = currentLang;
+        saveUserDot(state.userDot);
+        console.log('[HOLD] geocoded:', city, '·', country);
+      } catch (err) {
+        console.warn('[HOLD] geocoding failed:', err);
+      }
+    }
+
     function requestLocation() {
       if (!navigator.geolocation) {
         alert(t('err_unsupported'));
@@ -1278,6 +1331,7 @@
           if (navigator.vibrate) navigator.vibrate([8, 30, 16]);
           state.rotation = -state.userDot.lon + 0.1;
           broadcastPresence();
+          geocodeUserDot();
         },
         (err) => {
           closeSheet();
@@ -1335,6 +1389,14 @@
         el.cardText.innerHTML = t('card_text_alone');
       } else {
         el.cardText.innerHTML = t('card_text').replace('{n}', formatCount(others));
+      }
+      // Location stamp (if opted in and geocoded)
+      if (state.userDot && state.userDot.city && state.userDot.country) {
+        el.cardLocation.textContent = t('held_from')
+          .replace('{city}', state.userDot.city)
+          .replace('{country}', state.userDot.country);
+      } else {
+        el.cardLocation.textContent = '';
       }
       drawCardGlobe();
       el.cardOverlay.classList.add('visible');
@@ -1533,6 +1595,16 @@
       c.font = '400 22px "Geist Mono", monospace';
       const today = new Date().toISOString().slice(0, 10);
       c.fillText(today.replace(/-/g, '.'), W/2, 928);
+
+      // Location stamp (if opted in and geocoded)
+      if (state.userDot && state.userDot.city && state.userDot.country) {
+        const locText = t('held_from')
+          .replace('{city}', state.userDot.city)
+          .replace('{country}', state.userDot.country);
+        c.fillStyle = '#8a8478';
+        c.font = 'italic 300 26px "Fraunces", Georgia, serif';
+        c.fillText(locText, W/2, 988);
+      }
 
       // Wordmark
       c.fillStyle = '#ece7dd';
