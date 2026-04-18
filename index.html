@@ -1892,6 +1892,16 @@
       try {
         state.supabaseChannel.track(ps);
         state.trackCount++;
+        // IMPORTANT: Also send an explicit broadcast to wake up other clients.
+        // Supabase's presence 'sync' event doesn't fire reliably on other
+        // clients when track() only changes the value of an existing entry
+        // (e.g. holding: true → false). A broadcast forces every peer to
+        // re-read presenceState() and see our new hold status.
+        state.supabaseChannel.send({
+          type: 'broadcast',
+          event: 'state_changed',
+          payload: { from: state.myId, at: Date.now() }
+        });
       } catch (err) {
         console.warn('[HOLD] track failed:', err);
       }
@@ -1961,6 +1971,16 @@
           ingestPresenceState(channel.presenceState());
           logDebugEvent('leave:' + (key || '').slice(0, 4));
         });
+        // Explicit broadcast channel — used as a "wake-up" trigger for peers
+        // to re-read presenceState() whenever any client changes its hold
+        // status. Supabase's presence sync event alone is not sufficient
+        // for value changes within an existing presence entry.
+        channel.on('broadcast', { event: 'state_changed' }, ({ payload }) => {
+          if (!payload || payload.from === state.myId) return;
+          console.log('[HOLD] broadcast:state_changed from', (payload.from || '').slice(0, 4));
+          ingestPresenceState(channel.presenceState());
+          logDebugEvent('bcast:' + (payload.from || '').slice(0, 4));
+        });
 
         channel.subscribe(async (status, err) => {
           console.log('[HOLD] channel status:', status, err || '');
@@ -1989,6 +2009,25 @@
 
         window.addEventListener('beforeunload', () => {
           try { channel.unsubscribe(); } catch (_) {}
+        });
+
+        // When a tab/window comes back to foreground, force a re-sync.
+        // Safari aggressively throttles background tabs' WebSocket traffic,
+        // so presence state may be stale after returning. Ping peers to
+        // confirm everyone's current hold state.
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && state.supabaseChannel && state.connectionStatus === 'live') {
+            console.log('[HOLD] tab visible — re-syncing');
+            ingestPresenceState(channel.presenceState());
+            // Nudge peers to re-sync us too
+            try {
+              channel.send({
+                type: 'broadcast',
+                event: 'state_changed',
+                payload: { from: state.myId, at: Date.now() }
+              });
+            } catch (_) {}
+          }
         });
       } catch (err) {
         console.error('[HOLD] Supabase init threw:', err);
