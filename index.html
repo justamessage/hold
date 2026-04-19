@@ -1420,11 +1420,16 @@
       }
       if (el.liveDotLabel) el.liveDotLabel.textContent = label;
       if (el.liveDot) el.liveDot.classList.toggle('offline', status !== 'live');
-      // Honesty rule: if we are not live, we don't know the real count,
-      // so we show 0 rather than a stale or simulated number.
-      if (status !== 'live' && state.counter !== 0) {
-        state.counter = 0;
-        updateCounter();
+      // Honesty rule: if not live we don't know the global count, but we do
+      // know our own hold status. Show 1 if we're holding, 0 otherwise.
+      // This prevents the counter from showing 0 while the user is actively
+      // holding during a brief connection drop.
+      if (status !== 'live') {
+        const selfCount = state.isHolding ? 1 : 0;
+        if (state.counter !== selfCount) {
+          state.counter = selfCount;
+          updateCounter();
+        }
       }
       updateDebugPanel();
     }
@@ -1515,8 +1520,11 @@
       if (state.connectionStatus === 'live') {
         broadcastPresence();
         // Counter updates happen via presence sync — no local increment.
+      } else {
+        // Not live: show at least 1 since we ourselves are holding.
+        state.counter = 1;
+        updateCounter();
       }
-      // In non-live mode we stay at 0. HOLD shows honest numbers only.
 
       state.timerInterval = setInterval(() => {
         const elapsed = (performance.now() - state.holdStart) / 1000;
@@ -1540,8 +1548,11 @@
       if (state.connectionStatus === 'live') {
         broadcastPresence();
         // Counter updates happen via presence sync — no local decrement.
+      } else {
+        // Not live: reset to 0 after release.
+        state.counter = 0;
+        updateCounter();
       }
-      // In non-live mode we stay at 0. HOLD shows honest numbers only.
 
       clearInterval(state.timerInterval);
       el.timer.textContent = '0.0s';
