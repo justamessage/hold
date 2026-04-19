@@ -21,8 +21,8 @@
   :root {
     --bg: #050505;
     --text: #ece7dd;
-    --text-dim: #6b6459;
-    --text-faint: #3a3530;
+    --text-dim: #9a9388;
+    --text-faint: #625a4f;
     --light: #f4e4b8;
     --light-soft: rgba(244, 228, 184, 0.4);
     --light-glow: rgba(244, 228, 184, 0.15);
@@ -82,7 +82,7 @@
 
   .status-left, .status-right { display: flex; flex-direction: column; gap: 4px; }
   .status-right { text-align: right; align-items: flex-end; }
-  .status-left .counter.zero { opacity: 0.35; }
+  .status-left .counter.zero { opacity: 0.55; }
   .live-dot {
     display: inline-flex;
     align-items: center;
@@ -92,7 +92,7 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-dim);
-    opacity: 0.55;
+    opacity: 0.9;
   }
   .live-dot::before {
     content: '';
@@ -106,10 +106,10 @@
     background: var(--text-dim);
     box-shadow: none;
     animation: none;
-    opacity: 0.5;
+    opacity: 0.6;
   }
   @keyframes livePulse {
-    0%, 100% { opacity: 0.6; }
+    0%, 100% { opacity: 0.7; }
     50% { opacity: 1; }
   }
   .map-indicator {
@@ -121,13 +121,13 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--text-dim);
-    opacity: 0.65;
+    opacity: 0.9;
     cursor: pointer;
     background: none;
     border: none;
     padding: 0;
   }
-  .map-indicator.active { color: var(--light); opacity: 0.85; }
+  .map-indicator.active { color: var(--light); opacity: 1; }
   .map-indicator::before {
     content: '';
     width: 5px; height: 5px;
@@ -139,7 +139,7 @@
     color: var(--light); font-size: 14px;
     letter-spacing: 0.12em; font-variant-numeric: tabular-nums;
   }
-  .counter-label { font-size: 9px; color: var(--text-faint); }
+  .counter-label { font-size: 9px; color: var(--text-dim); }
 
   .mode-indicator {
     font-size: 9px;
@@ -158,15 +158,16 @@
 
   .join-link {
     font-family: 'Geist Mono', monospace;
-    font-size: 9px; letter-spacing: 0.22em;
+    font-size: 10px; letter-spacing: 0.18em;
     text-transform: uppercase; color: var(--text-dim);
     background: none; border: none; cursor: pointer;
     padding: 4px 0; margin-top: 2px;
-    transition: color 0.3s ease;
+    opacity: 0.9;
+    transition: color 0.3s ease, opacity 0.3s ease;
     -webkit-tap-highlight-color: transparent;
   }
-  .join-link:active, .join-link:hover { color: var(--light); }
-  .join-link.joined { color: var(--light); }
+  .join-link:active, .join-link:hover { color: var(--light); opacity: 1; }
+  .join-link.joined { color: var(--light); opacity: 1; }
   .join-link.joined::before {
     content: '●  '; font-size: 7px; vertical-align: middle;
   }
@@ -271,18 +272,18 @@
   .lang-switch {
     display: flex; justify-content: center; gap: 0;
     font-family: 'Geist Mono', monospace;
-    font-size: 9px; letter-spacing: 0.18em;
+    font-size: 10px; letter-spacing: 0.18em;
     text-transform: uppercase;
     padding-top: 14px;
     margin-top: 4px;
-    opacity: 0.5;
+    opacity: 0.85;
     max-width: 340px; margin-left: auto; margin-right: auto;
     transition: opacity 0.4s ease;
   }
-  .lang-switch:hover { opacity: 0.9; }
+  .lang-switch:hover { opacity: 1; }
   .lang-btn {
     background: none; border: none;
-    color: var(--text-faint);
+    color: var(--text-dim);
     padding: 6px 8px; cursor: pointer;
     font-family: inherit; font-size: inherit;
     letter-spacing: inherit; text-transform: inherit;
@@ -292,7 +293,7 @@
   }
   .lang-btn:active { color: var(--light); }
   .lang-btn.active { color: var(--light); }
-  .lang-sep { color: rgba(58, 53, 48, 0.5); padding: 6px 0; }
+  .lang-sep { color: var(--text-faint); padding: 6px 0; opacity: 0.7; }
 
   body.holding .bottom,
   body.holding .status-right { opacity: 0.12; }
