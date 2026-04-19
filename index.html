@@ -82,6 +82,58 @@
 
   .status-left, .status-right { display: flex; flex-direction: column; gap: 4px; }
   .status-right { text-align: right; align-items: flex-end; }
+  .status-left .counter.zero { opacity: 0.35; }
+  .live-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0.55;
+  }
+  .live-dot::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--light);
+    box-shadow: 0 0 8px var(--light);
+    animation: livePulse 2.4s ease-in-out infinite;
+  }
+  .live-dot.offline::before {
+    background: var(--text-dim);
+    box-shadow: none;
+    animation: none;
+    opacity: 0.5;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .map-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0.65;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .map-indicator.active { color: var(--light); opacity: 0.85; }
+  .map-indicator::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
 
   .counter {
     color: var(--light); font-size: 14px;
@@ -183,24 +235,51 @@
     padding: 0 20px;
   }
   .countdown {
-    font-family: 'Geist Mono', monospace;
-    font-size: 9px; letter-spacing: 0.24em;
-    color: var(--text-faint); text-transform: uppercase;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px;
+    margin-bottom: 16px;
     font-variant-numeric: tabular-nums;
-    margin-bottom: 12px;
   }
-  .countdown .next { color: var(--light); }
+  .countdown-brand {
+    font-family: 'Geist Mono', monospace;
+    font-size: 10px; letter-spacing: 0.32em;
+    color: var(--text-dim); text-transform: uppercase;
+    opacity: 0.8;
+  }
+  .countdown-info {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 24;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.01em;
+  }
+  .countdown-info .local-time {
+    color: var(--light);
+    font-style: normal;
+    font-family: 'Geist Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    padding: 0 2px;
+  }
+  .countdown-info .sep {
+    color: var(--text-faint);
+    margin: 0 8px;
+    opacity: 0.6;
+  }
 
   .lang-switch {
     display: flex; justify-content: center; gap: 0;
     font-family: 'Geist Mono', monospace;
-    font-size: 9px; letter-spacing: 0.22em;
+    font-size: 9px; letter-spacing: 0.18em;
     text-transform: uppercase;
-    padding-top: 8px;
-    border-top: 1px solid rgba(244, 228, 184, 0.05);
-    max-width: 340px; margin: 0 auto;
-    transition: opacity 0.5s ease;
+    padding-top: 14px;
+    margin-top: 4px;
+    opacity: 0.5;
+    max-width: 340px; margin-left: auto; margin-right: auto;
+    transition: opacity 0.4s ease;
   }
+  .lang-switch:hover { opacity: 0.9; }
   .lang-btn {
     background: none; border: none;
     color: var(--text-faint);
@@ -513,7 +592,7 @@
       <span class="counter" id="counter">—</span>
     </div>
     <div class="status-right">
-      <span class="mode-indicator" id="modeIndicator">v0.4 · simulated</span>
+      <span class="live-dot" id="liveDot"><span id="liveDotLabel" data-i18n="mode_live">live</span></span>
       <button class="join-link" id="joinBtn" data-i18n="join_link">Join the map →</button>
     </div>
   </div>
@@ -529,8 +608,12 @@
     <div class="wordmark">HOLD</div>
     <div class="tagline" data-i18n="tagline">Touch the world. Hold the world.</div>
     <div class="countdown">
-      <span data-i18n="countdown_prefix">THE 11:11 ·</span>
-      <span class="next" id="next1111" data-i18n="countdown_calc">calculating…</span>
+      <div class="countdown-brand">THE 11:11</div>
+      <div class="countdown-info">
+        <span id="nextLocalTime" class="local-time">—</span>
+        <span class="sep">·</span>
+        <span id="countdownDelta">—</span>
+      </div>
     </div>
     <div class="lang-switch" id="langSwitch"></div>
   </div>
@@ -578,7 +661,7 @@
     // ║   • Project URL  →  SUPABASE_URL                          ║
     // ║   • anon public  →  SUPABASE_ANON_KEY                     ║
     // ║                                                           ║
-    // ║   Leave empty → simulation mode (v0.3 behavior)           ║
+    // ║   Leave empty → offline mode (counter stays at 0)         ║
     // ║   Fill in both → real-time presence activates             ║
     // ║                                                           ║
     // ╚═══════════════════════════════════════════════════════════╝
@@ -596,7 +679,7 @@
         label: 'EN',
         counter_label: 'Now holding',
         join_link: 'Join the map →',
-        join_link_on: 'On the map · remove',
+        join_link_on: "You're on the map",
         tagline: 'Touch the world. Hold the world.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculating…',
@@ -630,16 +713,19 @@
         err_timeout: 'Location took too long. Try again — a better signal helps.',
         err_generic: 'Could not read location. Try again?',
         err_unsupported: 'Geolocation is not available on this device.',
-        mode_sim: 'v0.4 · simulated',
-        mode_connecting: 'v0.4 · connecting…',
-        mode_live: 'v0.4 · live',
-        mode_offline: 'v0.4 · offline',
+        mode_sim: 'offline',
+        mode_connecting: 'connecting',
+        mode_live: 'live',
+        mode_offline: 'offline',
+        in_a_moment: 'in a moment',
+        in_minutes: 'in {m} min',
+        in_hours_minutes: 'in {h}h {m}m',
       },
       de: {
         label: 'DE',
         counter_label: 'Halten gerade',
         join_link: 'Auf die Karte →',
-        join_link_on: 'Auf der Karte · entfernen',
+        join_link_on: 'Du bist auf der Karte',
         tagline: 'Berühre die Welt. Halte die Welt.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'wird berechnet…',
@@ -673,16 +759,19 @@
         err_timeout: 'Standortabruf hat zu lange gedauert. Versuche es mit besserem Signal nochmal.',
         err_generic: 'Ort konnte nicht gelesen werden. Erneut versuchen?',
         err_unsupported: 'Ortung ist auf diesem Gerät nicht verfügbar.',
-        mode_sim: 'v0.4 · simuliert',
-        mode_connecting: 'v0.4 · verbinde…',
-        mode_live: 'v0.4 · live',
-        mode_offline: 'v0.4 · offline',
+        mode_sim: 'offline',
+        mode_connecting: 'verbinde',
+        mode_live: 'live',
+        mode_offline: 'offline',
+        in_a_moment: 'gleich',
+        in_minutes: 'in {m} Min',
+        in_hours_minutes: 'in {h}h {m}m',
       },
       es: {
         label: 'ES',
         counter_label: 'Sosteniendo ahora',
         join_link: 'Únete al mapa →',
-        join_link_on: 'En el mapa · quitar',
+        join_link_on: 'Estás en el mapa',
         tagline: 'Toca el mundo. Sostén el mundo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculando…',
@@ -716,16 +805,19 @@
         err_timeout: 'La ubicación tardó demasiado. Inténtalo de nuevo con mejor señal.',
         err_generic: 'No se pudo leer la ubicación. ¿Intentar de nuevo?',
         err_unsupported: 'La geolocalización no está disponible en este dispositivo.',
-        mode_sim: 'v0.4 · simulado',
-        mode_connecting: 'v0.4 · conectando…',
-        mode_live: 'v0.4 · en vivo',
-        mode_offline: 'v0.4 · offline',
+        mode_sim: 'offline',
+        mode_connecting: 'conectando',
+        mode_live: 'en vivo',
+        mode_offline: 'offline',
+        in_a_moment: 'en un momento',
+        in_minutes: 'en {m} min',
+        in_hours_minutes: 'en {h}h {m}m',
       },
       'pt-BR': {
         label: 'PT',
         counter_label: 'Segurando agora',
         join_link: 'Entre no mapa →',
-        join_link_on: 'No mapa · remover',
+        join_link_on: 'Você está no mapa',
         tagline: 'Toque o mundo. Segure o mundo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calculando…',
@@ -759,16 +851,19 @@
         err_timeout: 'A localização demorou demais. Tente novamente com melhor sinal.',
         err_generic: 'Não foi possível ler a localização. Tentar novamente?',
         err_unsupported: 'Geolocalização não disponível neste dispositivo.',
-        mode_sim: 'v0.4 · simulado',
-        mode_connecting: 'v0.4 · conectando…',
-        mode_live: 'v0.4 · ao vivo',
-        mode_offline: 'v0.4 · offline',
+        mode_sim: 'offline',
+        mode_connecting: 'conectando',
+        mode_live: 'ao vivo',
+        mode_offline: 'offline',
+        in_a_moment: 'em instantes',
+        in_minutes: 'em {m} min',
+        in_hours_minutes: 'em {h}h {m}m',
       },
       fr: {
         label: 'FR',
         counter_label: 'À tenir maintenant',
         join_link: 'Rejoindre la carte →',
-        join_link_on: 'Sur la carte · retirer',
+        join_link_on: 'Tu es sur la carte',
         tagline: 'Touche le monde. Tiens le monde.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'calcul en cours…',
@@ -802,16 +897,19 @@
         err_timeout: 'La localisation a pris trop de temps. Réessaie avec un meilleur signal.',
         err_generic: "Impossible de lire la localisation. Réessayer ?",
         err_unsupported: "La géolocalisation n'est pas disponible sur cet appareil.",
-        mode_sim: 'v0.4 · simulé',
-        mode_connecting: 'v0.4 · connexion…',
-        mode_live: 'v0.4 · en direct',
-        mode_offline: 'v0.4 · hors ligne',
+        mode_sim: 'hors ligne',
+        mode_connecting: 'connexion',
+        mode_live: 'en direct',
+        mode_offline: 'hors ligne',
+        in_a_moment: 'dans un instant',
+        in_minutes: 'dans {m} min',
+        in_hours_minutes: 'dans {h}h {m}m',
       },
       it: {
         label: 'IT',
         counter_label: 'Stanno tenendo',
         join_link: 'Unisciti alla mappa →',
-        join_link_on: 'Sulla mappa · rimuovi',
+        join_link_on: 'Sei sulla mappa',
         tagline: 'Tocca il mondo. Tieni il mondo.',
         countdown_prefix: 'THE 11:11 ·',
         countdown_calc: 'in calcolo…',
@@ -845,10 +943,13 @@
         err_timeout: 'La posizione ha impiegato troppo tempo. Riprova con un segnale migliore.',
         err_generic: 'Impossibile leggere la posizione. Riprovare?',
         err_unsupported: 'Geolocalizzazione non disponibile su questo dispositivo.',
-        mode_sim: 'v0.4 · simulato',
-        mode_connecting: 'v0.4 · connessione…',
-        mode_live: 'v0.4 · dal vivo',
-        mode_offline: 'v0.4 · offline',
+        mode_sim: 'offline',
+        mode_connecting: 'connessione',
+        mode_live: 'dal vivo',
+        mode_offline: 'offline',
+        in_a_moment: 'a momenti',
+        in_minutes: 'in {m} min',
+        in_hours_minutes: 'in {h}h {m}m',
       },
     };
 
@@ -885,6 +986,8 @@
       updateModeIndicator();
       // Re-format counter in new locale (e.g. 1.234 → 1,234)
       updateCounter();
+      // Re-render countdown with new locale's time format and translated delta
+      updateCountdown();
       // Re-geocode user location in new language (for country name translation)
       if (state.userDot && state.userDot.showPrecise && state.userDot.geocodedLang !== currentLang) {
         geocodeUserDot();
@@ -945,7 +1048,6 @@
       holdStart: 0,
       holdDuration: 0,
       counter: 0,
-      targetCounter: 0,
       timerInterval: null,
       activePointerId: null,
 
@@ -989,9 +1091,11 @@
       globeWrap:   document.getElementById('globeWrap'),
       canvas:      document.getElementById('globeCanvas'),
       counter:     document.getElementById('counter'),
-      modeInd:     document.getElementById('modeIndicator'),
+      liveDot:     document.getElementById('liveDot'),
+      liveDotLabel: document.getElementById('liveDotLabel'),
       timer:       document.getElementById('timer'),
-      countdown:   document.getElementById('next1111'),
+      countdownLocal: document.getElementById('nextLocalTime'),
+      countdownDelta: document.getElementById('countdownDelta'),
       joinBtn:     document.getElementById('joinBtn'),
       sheetBack:   document.getElementById('sheetBackdrop'),
       sheetSkip:   document.getElementById('sheetSkip'),
@@ -1267,33 +1371,17 @@
 
     function updateCounter() {
       el.counter.textContent = formatCount(state.counter);
+      el.counter.classList.toggle('zero', state.counter === 0);
     }
 
-    // Simulation mode: fake counter with peaks & drift
-    function initSimCounter() {
-      const hour = new Date().getUTCHours();
-      const peakFactor = 1 + 0.35 * Math.sin((hour - 4) * Math.PI / 12);
-      state.counter = Math.floor((8200 + Math.random() * 3400) * peakFactor);
-      state.targetCounter = state.counter;
+    // When not in live mode, the counter is 0.
+    // We do NOT fake a number — HOLD is about real presence, not fake engagement.
+    // If connection drops, showing 0 is honest. The real number will return
+    // the moment Supabase reconnects.
+    function resetCounterForNonLive() {
+      state.counter = 0;
       updateCounter();
     }
-
-    function simCounterTick() {
-      // Only run simulation when Supabase is NOT configured at all.
-      // Prevents fake numbers from flashing during connecting / brief disconnects.
-      if (SUPABASE_ENABLED) return;
-      const drift = Math.floor((Math.random() - 0.5) * 14);
-      state.targetCounter = Math.max(1000, state.targetCounter + drift);
-      if (Math.random() < 0.035) {
-        state.targetCounter += Math.floor(40 + Math.random() * 180);
-      }
-      const diff = state.targetCounter - state.counter;
-      if (Math.abs(diff) > 0) {
-        state.counter += Math.sign(diff) * Math.max(1, Math.floor(Math.abs(diff) * 0.28));
-        updateCounter();
-      }
-    }
-    setInterval(simCounterTick, 850);
 
     function recalcLiveCounter() {
       if (state.connectionStatus !== 'live') return;
@@ -1330,8 +1418,14 @@
       if (status === 'offline' && state.offlineReason) {
         label += ' · ' + state.offlineReason;
       }
-      el.modeInd.textContent = label;
-      el.modeInd.classList.toggle('live', status === 'live');
+      if (el.liveDotLabel) el.liveDotLabel.textContent = label;
+      if (el.liveDot) el.liveDot.classList.toggle('offline', status !== 'live');
+      // Honesty rule: if we are not live, we don't know the real count,
+      // so we show 0 rather than a stale or simulated number.
+      if (status !== 'live' && state.counter !== 0) {
+        state.counter = 0;
+        updateCounter();
+      }
       updateDebugPanel();
     }
 
@@ -1421,9 +1515,8 @@
       if (state.connectionStatus === 'live') {
         broadcastPresence();
         // Counter updates happen via presence sync — no local increment.
-      } else {
-        state.targetCounter += 1;
       }
+      // In non-live mode we stay at 0. HOLD shows honest numbers only.
 
       state.timerInterval = setInterval(() => {
         const elapsed = (performance.now() - state.holdStart) / 1000;
@@ -1447,9 +1540,8 @@
       if (state.connectionStatus === 'live') {
         broadcastPresence();
         // Counter updates happen via presence sync — no local decrement.
-      } else {
-        state.targetCounter = Math.max(1000, state.targetCounter - 1);
       }
+      // In non-live mode we stay at 0. HOLD shows honest numbers only.
 
       clearInterval(state.timerInterval);
       el.timer.textContent = '0.0s';
@@ -1928,7 +2020,30 @@
       const diff = target - now;
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
-      el.countdown.textContent = h + 'h ' + String(m).padStart(2, '0') + 'm';
+
+      // Local time at which the global 11:11 UTC moment will occur,
+      // formatted in the user's locale. Force 24h for non-English locales
+      // (English defaults to AM/PM which is culturally fine for EN users).
+      if (el.countdownLocal) {
+        const useAmPm = (currentLang || 'en').startsWith('en');
+        el.countdownLocal.textContent = target.toLocaleTimeString(currentLang || 'en', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: useAmPm
+        });
+      }
+      if (el.countdownDelta) {
+        // Soft humanized countdown: "in 3h 53m", "in 45m", "in a moment"
+        if (diff < 60000) {
+          el.countdownDelta.textContent = t('in_a_moment');
+        } else if (h === 0) {
+          el.countdownDelta.textContent = t('in_minutes').replace('{m}', m);
+        } else {
+          el.countdownDelta.textContent = t('in_hours_minutes')
+            .replace('{h}', h)
+            .replace('{m}', String(m).padStart(2, '0'));
+        }
+      }
     }
     setInterval(updateCountdown, 30000);
 
@@ -2008,7 +2123,7 @@
       if (!SUPABASE_ENABLED) {
         state.connectionStatus = 'sim';
         updateModeIndicator();
-        initSimCounter();
+        resetCounterForNonLive();
         return;
       }
 
@@ -2021,11 +2136,28 @@
         state.connectionStatus = 'offline';
         state.offlineReason = 'sdk';
         updateModeIndicator();
+        resetCounterForNonLive();
         return;
       }
 
       try {
+        // Important: Disable all auth/session machinery.
+        // HOLD has no user accounts — we only use the Realtime channel.
+        // Without these flags, Supabase tries to touch localStorage during
+        // init, which Safari blocks in Private Mode / strict tracking
+        // prevention, throwing "WebSocket not available: operation is insecure".
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+            storage: {
+              // no-op storage: pretend to work but never touches localStorage
+              getItem: () => null,
+              setItem: () => {},
+              removeItem: () => {}
+            }
+          },
           realtime: { params: { eventsPerSecond: 10 } }
         });
         state.supabaseClient = client;
@@ -2242,9 +2374,11 @@
         });
       } catch (err) {
         console.error('[HOLD] Supabase init threw:', err);
+        // Fallback: show 0, not a fake number. Honesty first.
         state.connectionStatus = 'offline';
         state.offlineReason = 'init';
         updateModeIndicator();
+        resetCounterForNonLive();
       }
     }
 
